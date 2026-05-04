@@ -43,6 +43,8 @@ public class Lwjgl3Launcher {
         //// Know that it might not work well in some cases.
 //        configuration.setOpenGLEmulation(Lwjgl3ApplicationConfiguration.GLEmulation.ANGLE_GLES20, 0, 0);
 
+        configuration.setBackBufferConfig(8,8,8,8, 16, 8, 4);
+
         return configuration;
     }
 }
