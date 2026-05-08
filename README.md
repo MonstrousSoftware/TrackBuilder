@@ -14,6 +14,8 @@ A tilt angle for the road can be defined with a separate list of control points 
 Press 1 for map view, press 2 for first person view.
 
 
+SHIFT+Left mouse button to place a marker
+Arrow keys to move the selected (yellow) marker in the horizontal plane.
 
 
 ## Platforms

@@ -15,7 +15,10 @@ import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.CatmullRomSpline;
+import com.badlogic.gdx.math.Intersector;
+import com.badlogic.gdx.math.Plane;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.math.collision.Ray;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -31,6 +34,8 @@ public class Main extends ApplicationAdapter {
     public ModelBatch modelBatch;
     public Array<ModelInstance> instances;
     public Array<ModelInstance> debugInstances;
+    public Array<ModelInstance> markers;
+    public ModelInstance selectedMarker;
     public Array<Disposable> disposables;
     public Environment environment;
     private ShapeRenderer shapeRenderer;
@@ -39,6 +44,7 @@ public class Main extends ApplicationAdapter {
     private final Vector3[] pathPoints = new Vector3[100];	// to render spline (debug)
     private float time = 0;
     private boolean driveMode = false;
+    private Model blockModel;
 
 
     @Override
@@ -75,6 +81,7 @@ public class Main extends ApplicationAdapter {
 
         instances = new Array<>();
         debugInstances = new Array<>();
+        markers = new Array<>();
 
 
         ModelBuilder modelBuilder = new ModelBuilder();
@@ -103,12 +110,32 @@ public class Main extends ApplicationAdapter {
         placeDriveCamera(driveCam, 0);
     }
 
+    /** move selected marker (if any) if an arrow key is pressed */
+    private void moveSelectedMarker(){
+        if(selectedMarker == null)
+            return;
+        if(Gdx.input.isKeyJustPressed(Input.Keys.UP))
+            selectedMarker.transform.translate(0,0,-.2f);
+        if(Gdx.input.isKeyJustPressed(Input.Keys.DOWN))
+            selectedMarker.transform.translate(0,0,.2f);
+        if(Gdx.input.isKeyJustPressed(Input.Keys.LEFT))
+            selectedMarker.transform.translate(-.2f,0,0);
+        if(Gdx.input.isKeyJustPressed(Input.Keys.RIGHT))
+            selectedMarker.transform.translate(.2f,0,0);
+    }
+
+
     @Override
     public void render() {
         if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_1))
             driveMode = false;
         if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_2))
             driveMode = true;
+        if(Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) && Gdx.input.isButtonJustPressed(Input.Buttons.LEFT))
+            addMarker(editCam, Gdx.input.getX(), Gdx.input.getY());
+
+        moveSelectedMarker();
+
         float delta = Gdx.graphics.getDeltaTime();
         time += 0.02f * delta;
         if(time > 1.0f)
@@ -122,8 +149,11 @@ public class Main extends ApplicationAdapter {
 
         modelBatch.begin(cam);
         modelBatch.render(instances, environment);
-        if(!driveMode)
+        if(!driveMode) {
+            highlightMarker(editCam, Gdx.input.getX(), Gdx.input.getY());
             modelBatch.render(debugInstances, environment);
+            modelBatch.render(markers, environment);
+        }
         modelBatch.end();
 
         if(!driveMode)
@@ -175,7 +205,7 @@ public class Main extends ApplicationAdapter {
         normalSpline = new CatmullRomSpline<Vector3>(normalControlPoints, true);
 
         ModelBuilder modelBuilder = new ModelBuilder();
-        Model blockModel = modelBuilder.createBox(1f, 1f, 1f, new Material(ColorAttribute.createDiffuse(Color.BLUE)),
+        blockModel = modelBuilder.createBox(1f, 1f, 1f, new Material(ColorAttribute.createDiffuse(Color.BLUE)),
             VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal);
         disposables.add(blockModel);
         for(Vector3 p : controlPoints){
@@ -325,6 +355,51 @@ public class Main extends ApplicationAdapter {
         }
         return modelBuilder.end();
 
+    }
+
+    private final Vector3 intersection = new Vector3();
+    private final Plane plane = new Plane(Vector3.Y, 0);
+
+    /** add a marker in the horizontal plane at the place of the mouse cursor */
+    private void addMarker(Camera cam, float screenX, float screenY){
+        Ray ray = cam.getPickRay(screenX, screenY);
+        Intersector.intersectRayPlane(ray, plane, intersection);
+        // don't add a marker if too close to a selected marker
+        // this to avoid multiple markers in the same position
+        if(selectedMarker != null) {
+            selectedMarker.transform.getTranslation(tmpPos);
+            if(tmpPos.dst2(intersection) < SELECT_DISTANCE2){
+                return;
+            }
+        }
+        ModelInstance marker = new ModelInstance(blockModel, intersection);
+        markers.add(marker);
+    }
+
+
+
+    private Vector3 tmpPos = new Vector3();
+    private final float SELECT_DISTANCE2 = 4f;
+
+    /** highlight the marker under the mouse cursor (if any) */
+    private void highlightMarker(Camera cam, float screenX, float screenY){
+        Ray ray = cam.getPickRay(screenX, screenY);
+        Plane plane = new Plane(Vector3.Y, 0);
+
+
+        Intersector.intersectRayPlane(ray, plane, intersection);
+        for(ModelInstance marker : markers){
+            marker.transform.getTranslation(tmpPos);
+            if(tmpPos.dst2(intersection) < SELECT_DISTANCE2) {
+                if(selectedMarker == marker)
+                    return;
+                if(selectedMarker != null)
+                    selectedMarker.materials.get(0).set(ColorAttribute.createDiffuse(Color.BLUE));
+                selectedMarker = marker;
+                selectedMarker.materials.get(0).set(ColorAttribute.createDiffuse(Color.YELLOW));
+                break;
+            }
+        }
     }
 
     @Override
