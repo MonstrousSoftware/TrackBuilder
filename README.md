@@ -15,7 +15,9 @@ Press 1 for map view, press 2 for first person view.
 
 
 SHIFT+Left mouse button to place a marker
+X to delete the selected marker.
 Arrow keys to move the selected (yellow) marker in the horizontal plane.
+SHIFT + Arrow keys to rotate the selected (yellow) marker.
 
 
 ## Platforms

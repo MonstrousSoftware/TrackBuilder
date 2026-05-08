@@ -14,10 +14,7 @@ import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.CatmullRomSpline;
-import com.badlogic.gdx.math.Intersector;
-import com.badlogic.gdx.math.Plane;
-import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.math.collision.Ray;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
@@ -45,6 +42,10 @@ public class Main extends ApplicationAdapter {
     private float time = 0;
     private boolean driveMode = false;
     private Model blockModel;
+    private Model roadModel;
+    private ModelInstance roadModelInstance;
+    private Model centreLineModel;
+    private ModelInstance centreLineModelInstance;
 
 
     @Override
@@ -94,34 +95,64 @@ public class Main extends ApplicationAdapter {
         debugInstances.add( new ModelInstance(xyzModel));
         disposables.add(xyzModel);
 
+        blockModel = modelBuilder.createBox(1f, 1f, 1f, new Material(ColorAttribute.createDiffuse(Color.BLUE)),
+            VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal);
+        disposables.add(blockModel);
+
         Gdx.input.setInputProcessor(new InputMultiplexer( inputController = new CameraInputController(editCam)));
 
-        buildSpline();
+        initMarkers();
+        buildSplineFromMarkers(markers);
         shapeRenderer = new ShapeRenderer();
 
-        Model roadModel = buildRoadModelFromSpline(positionSpline);
-        instances.add( new ModelInstance(roadModel));
-        disposables.add(roadModel);
-
-        Model lineModel = buildCentreLineModelFromSpline(positionSpline);
-        instances.add( new ModelInstance(lineModel));
-        disposables.add(lineModel);
+        buildRoad();
 
         placeDriveCamera(driveCam, 0);
     }
 
     /** move selected marker (if any) if an arrow key is pressed */
-    private void moveSelectedMarker(){
-        if(selectedMarker == null)
+    private void moveSelectedMarker() {
+        if (selectedMarker == null)
             return;
-        if(Gdx.input.isKeyJustPressed(Input.Keys.UP))
-            selectedMarker.transform.translate(0,0,-.2f);
-        if(Gdx.input.isKeyJustPressed(Input.Keys.DOWN))
-            selectedMarker.transform.translate(0,0,.2f);
-        if(Gdx.input.isKeyJustPressed(Input.Keys.LEFT))
-            selectedMarker.transform.translate(-.2f,0,0);
-        if(Gdx.input.isKeyJustPressed(Input.Keys.RIGHT))
-            selectedMarker.transform.translate(.2f,0,0);
+        boolean rebuild = false;
+        if (Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)) {
+            if (Gdx.input.isKeyPressed(Input.Keys.UP))
+                selectedMarker.transform.rotate(Vector3.X, -1f);
+            if (Gdx.input.isKeyPressed(Input.Keys.DOWN))
+                selectedMarker.transform.rotate(Vector3.X, 1f);
+            if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
+                selectedMarker.transform.rotate(Vector3.Z, -1f);
+            if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
+                selectedMarker.transform.rotate(Vector3.Z, 1f);
+        } else {
+            if (Gdx.input.isKeyPressed(Input.Keys.UP))
+                selectedMarker.transform.translate(0, 0, -.2f);
+            if (Gdx.input.isKeyPressed(Input.Keys.DOWN))
+                selectedMarker.transform.translate(0, 0, .2f);
+            if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
+                selectedMarker.transform.translate(-.2f, 0, 0);
+            if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
+                selectedMarker.transform.translate(.2f, 0, 0);
+
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.UP) || Gdx.input.isKeyPressed(Input.Keys.DOWN) ||
+            Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+
+            buildSplineFromMarkers(markers);
+            buildRoad();
+        }
+    }
+
+    private void buildRoad(){
+        if(roadModel != null) {
+            roadModel.dispose();
+            centreLineModel.dispose();
+        }
+
+        roadModel = buildRoadModelFromSpline(positionSpline);
+        roadModelInstance = new ModelInstance(roadModel);
+        centreLineModel = buildCentreLineModelFromSpline(positionSpline);
+        centreLineModelInstance =  new ModelInstance(centreLineModel);
     }
 
 
@@ -133,6 +164,8 @@ public class Main extends ApplicationAdapter {
             driveMode = true;
         if(Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) && Gdx.input.isButtonJustPressed(Input.Buttons.LEFT))
             addMarker(editCam, Gdx.input.getX(), Gdx.input.getY());
+        if(Gdx.input.isKeyJustPressed(Input.Keys.X))
+            removeSelectedMarker();
 
         moveSelectedMarker();
 
@@ -143,14 +176,18 @@ public class Main extends ApplicationAdapter {
         inputController.update();
         placeDriveCamera(driveCam, time);
 
+        if(!driveMode)
+            highlightMarker(editCam, Gdx.input.getX(), Gdx.input.getY());
+
         ScreenUtils.clear(Color.TEAL, true);
 
         Camera cam = driveMode ? driveCam : editCam;
 
         modelBatch.begin(cam);
         modelBatch.render(instances, environment);
+        modelBatch.render(roadModelInstance, environment);
+        modelBatch.render(centreLineModelInstance, environment);
         if(!driveMode) {
-            highlightMarker(editCam, Gdx.input.getX(), Gdx.input.getY());
             modelBatch.render(debugInstances, environment);
             modelBatch.render(markers, environment);
         }
@@ -174,44 +211,47 @@ public class Main extends ApplicationAdapter {
     }
 
 
-    private void buildSpline() {
+    private void initMarkers() {
         float ht = 0;
         float scl = 1f;
 
+        markers.clear();
+
         Vector3[] controlPoints = {
-            new Vector3(-20*scl, ht, 20*scl),
-            new Vector3(20*scl, ht, 25*scl),
+            new Vector3(-20 * scl, ht, 20 * scl),
+            new Vector3(20 * scl, ht, 25 * scl),
 
-            new Vector3(25*scl, ht+3f, -30*scl),
+            new Vector3(25 * scl, ht + 3f, -30 * scl),
 
-            new Vector3(-15*scl, ht, -24*scl),
-            new Vector3(-50*scl, ht, -5*scl),
+            new Vector3(-15 * scl, ht, -24 * scl),
+            new Vector3(-50 * scl, ht, -5 * scl),
 
-            new Vector3(-15*scl, ht, 5*scl),
+            new Vector3(-15 * scl, ht, 5 * scl),
         };
-        positionSpline = new CatmullRomSpline<Vector3>(controlPoints, true);
-
-        Vector3[] normalControlPoints = {
-            new Vector3(Vector3.Y),
-            new Vector3(Vector3.Y),
-
-            new Vector3(-.25f, 1f, .3f).nor(),
-
-            new Vector3(Vector3.Y),
-            new Vector3(.15f, 1f, .0f).nor(),
-
-            new Vector3(Vector3.Y),
-        };
-        normalSpline = new CatmullRomSpline<Vector3>(normalControlPoints, true);
-
-        ModelBuilder modelBuilder = new ModelBuilder();
-        blockModel = modelBuilder.createBox(1f, 1f, 1f, new Material(ColorAttribute.createDiffuse(Color.BLUE)),
-            VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal);
-        disposables.add(blockModel);
-        for(Vector3 p : controlPoints){
+        for (Vector3 p : controlPoints) {
             ModelInstance instance = new ModelInstance(blockModel, p);
-            debugInstances.add(instance);
+            markers.add(instance);
         }
+    }
+
+    private void buildSplineFromMarkers(Array<ModelInstance> markers) {
+        Vector3[] controlPoints = new Vector3[markers.size];
+        Vector3[] normalControlPoints = new Vector3[markers.size];
+
+        int index = 0;
+        for(ModelInstance marker : markers){
+            Vector3 pos = new Vector3();
+            marker.transform.getTranslation(pos);
+            controlPoints[index] = pos;
+
+            Vector3 normalVector = new Vector3(Vector3.Y);
+            normalVector.rot(marker.transform);
+            normalControlPoints[index] = normalVector;
+
+            index++;
+        }
+        positionSpline = new CatmullRomSpline<Vector3>(controlPoints, true);
+        normalSpline = new CatmullRomSpline<Vector3>(normalControlPoints, true);
 
         // fill array of points for debug render
         for(int i = 0; i < 100; i++) {
@@ -376,6 +416,16 @@ public class Main extends ApplicationAdapter {
         markers.add(marker);
     }
 
+    private void removeSelectedMarker(){
+        if(selectedMarker == null)
+            return;
+        Gdx.app.log("deleting node","");
+        markers.removeValue(selectedMarker, true);
+        selectedMarker = null;
+        buildSplineFromMarkers(markers);
+        buildRoad();
+    }
+
 
 
     private Vector3 tmpPos = new Vector3();
@@ -386,15 +436,16 @@ public class Main extends ApplicationAdapter {
         Ray ray = cam.getPickRay(screenX, screenY);
         Plane plane = new Plane(Vector3.Y, 0);
 
-
         Intersector.intersectRayPlane(ray, plane, intersection);
         for(ModelInstance marker : markers){
             marker.transform.getTranslation(tmpPos);
+            tmpPos.y = 0; // project to ground plane to ignore height difference
             if(tmpPos.dst2(intersection) < SELECT_DISTANCE2) {
-                if(selectedMarker == marker)
+                if(selectedMarker == marker)    // marker is already selected, do nothing
                     return;
-                if(selectedMarker != null)
+                if(selectedMarker != null) // deselect previous selected marker
                     selectedMarker.materials.get(0).set(ColorAttribute.createDiffuse(Color.BLUE));
+                // select chosen marker
                 selectedMarker = marker;
                 selectedMarker.materials.get(0).set(ColorAttribute.createDiffuse(Color.YELLOW));
                 break;
@@ -406,5 +457,7 @@ public class Main extends ApplicationAdapter {
     public void dispose() {
         for(Disposable d : disposables)
             d.dispose();
+        roadModel.dispose();
+        centreLineModel.dispose();
     }
 }
