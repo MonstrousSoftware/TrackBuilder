@@ -102,10 +102,9 @@ public class Main extends ApplicationAdapter {
         Gdx.input.setInputProcessor(new InputMultiplexer( inputController = new CameraInputController(editCam)));
 
         initMarkers();
-        buildSplineFromMarkers(markers);
-        shapeRenderer = new ShapeRenderer();
-
         buildRoad();
+
+        shapeRenderer = new ShapeRenderer();
 
         placeDriveCamera(driveCam, 0);
     }
@@ -138,12 +137,12 @@ public class Main extends ApplicationAdapter {
         if (Gdx.input.isKeyPressed(Input.Keys.UP) || Gdx.input.isKeyPressed(Input.Keys.DOWN) ||
             Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
 
-            buildSplineFromMarkers(markers);
             buildRoad();
         }
     }
 
     private void buildRoad(){
+        buildSplineFromMarkers(markers);
         if(roadModel != null) {
             roadModel.dispose();
             centreLineModel.dispose();
@@ -221,7 +220,7 @@ public class Main extends ApplicationAdapter {
             new Vector3(-20 * scl, ht, 20 * scl),
             new Vector3(20 * scl, ht, 25 * scl),
 
-            new Vector3(25 * scl, ht + 3f, -30 * scl),
+            new Vector3(25 * scl, ht, -30 * scl),
 
             new Vector3(-15 * scl, ht, -24 * scl),
             new Vector3(-50 * scl, ht, -5 * scl),
@@ -401,6 +400,7 @@ public class Main extends ApplicationAdapter {
     private final Plane plane = new Plane(Vector3.Y, 0);
 
     /** add a marker in the horizontal plane at the place of the mouse cursor */
+    // todo should insert it at the best place in the loop, not per se at the end
     private void addMarker(Camera cam, float screenX, float screenY){
         Ray ray = cam.getPickRay(screenX, screenY);
         Intersector.intersectRayPlane(ray, plane, intersection);
@@ -413,16 +413,41 @@ public class Main extends ApplicationAdapter {
             }
         }
         ModelInstance marker = new ModelInstance(blockModel, intersection);
-        markers.add(marker);
+        //markers.add(marker);
+        insertMarker(marker);
+        buildRoad();
+    }
+
+    // tries to find the best place in the loop to place the new marker
+    // by looking for closest existing marker
+    // (but should take into account the track direction)
+    private void insertMarker(ModelInstance newMarker){
+
+        int closest = 0;
+        float minDistance = Float.MAX_VALUE;
+        Vector3 newPos = new Vector3();
+        newMarker.transform.getTranslation(newPos);
+
+        int index = 0;
+        for(ModelInstance marker : markers){
+            marker.transform.getTranslation(tmpPos);
+            float dist = tmpPos.dst(newPos);
+            if(dist < minDistance){
+                minDistance = dist;
+                closest = index;
+            }
+            index++;
+        }
+
+        markers.insert(closest, newMarker);
     }
 
     private void removeSelectedMarker(){
         if(selectedMarker == null)
             return;
-        Gdx.app.log("deleting node","");
         markers.removeValue(selectedMarker, true);
         selectedMarker = null;
-        buildSplineFromMarkers(markers);
+
         buildRoad();
     }
 
@@ -432,6 +457,8 @@ public class Main extends ApplicationAdapter {
     private final float SELECT_DISTANCE2 = 4f;
 
     /** highlight the marker under the mouse cursor (if any) */
+    // note if the view is at a low angle and the marker is above ground level, the mouse cursor
+    // may need to be held below the marker.
     private void highlightMarker(Camera cam, float screenX, float screenY){
         Ray ray = cam.getPickRay(screenX, screenY);
         Plane plane = new Plane(Vector3.Y, 0);
@@ -439,6 +466,7 @@ public class Main extends ApplicationAdapter {
         Intersector.intersectRayPlane(ray, plane, intersection);
         for(ModelInstance marker : markers){
             marker.transform.getTranslation(tmpPos);
+            intersection.y = 0;
             tmpPos.y = 0; // project to ground plane to ignore height difference
             if(tmpPos.dst2(intersection) < SELECT_DISTANCE2) {
                 if(selectedMarker == marker)    // marker is already selected, do nothing
