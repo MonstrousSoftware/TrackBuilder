@@ -4,6 +4,7 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputMultiplexer;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g3d.*;
@@ -16,9 +17,7 @@ import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.math.collision.Ray;
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.Disposable;
-import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.*;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends ApplicationAdapter {
@@ -46,6 +45,7 @@ public class Main extends ApplicationAdapter {
     private ModelInstance roadModelInstance;
     private Model centreLineModel;
     private ModelInstance centreLineModelInstance;
+    private boolean wireFrameMode = false;
 
 
     @Override
@@ -99,7 +99,13 @@ public class Main extends ApplicationAdapter {
             VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal);
         disposables.add(blockModel);
 
-        Gdx.input.setInputProcessor(new InputMultiplexer( inputController = new CameraInputController(editCam)));
+        inputController = new CameraInputController(editCam);
+        // disable WASD controls, because we want to use these keys for something else
+        inputController.forwardKey = Input.Keys.BUTTON_A;
+        inputController.backwardKey = Input.Keys.BUTTON_A;
+        inputController.rotateLeftKey = Input.Keys.BUTTON_A;
+        inputController.rotateRightKey = Input.Keys.BUTTON_A;
+        Gdx.input.setInputProcessor(new InputMultiplexer( inputController));
 
         initMarkers();
         buildRoad();
@@ -113,7 +119,6 @@ public class Main extends ApplicationAdapter {
     private void moveSelectedMarker() {
         if (selectedMarker == null)
             return;
-        boolean rebuild = false;
         if (Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)) {
             if (Gdx.input.isKeyPressed(Input.Keys.UP))
                 selectedMarker.transform.rotate(Vector3.X, -1f);
@@ -141,6 +146,7 @@ public class Main extends ApplicationAdapter {
         }
     }
 
+    /** recreate road model from marker positions and normals */
     private void buildRoad(){
         buildSplineFromMarkers(markers);
         if(roadModel != null) {
@@ -165,6 +171,16 @@ public class Main extends ApplicationAdapter {
             addMarker(editCam, Gdx.input.getX(), Gdx.input.getY());
         if(Gdx.input.isKeyJustPressed(Input.Keys.X))
             removeSelectedMarker();
+        if(Gdx.input.isKeyJustPressed(Input.Keys.W)) {
+            wireFrameMode = !wireFrameMode;
+            buildRoad();
+        }
+        if(Gdx.input.isKeyJustPressed(Input.Keys.S)) {
+            saveTrack();
+        }
+        if(Gdx.input.isKeyJustPressed(Input.Keys.L)) {
+            loadTrack();
+        }
 
         moveSelectedMarker();
 
@@ -233,6 +249,57 @@ public class Main extends ApplicationAdapter {
         }
     }
 
+    static class Marker {
+        Vector3 position;
+        Vector3 normal;
+    }
+
+    private void saveTrack(){
+        Marker[] saveMarkers = new Marker[markers.size];
+        int index = 0;
+        Vector3 normalVector = new Vector3();
+        for(ModelInstance marker : markers) {
+            Vector3 pos = new Vector3();
+            marker.transform.getTranslation(pos);
+            Marker m = new Marker();
+            m.position = pos;
+
+            normalVector.set(Vector3.Y);
+            normalVector.rot(marker.transform);
+            m.normal = new Vector3(normalVector);
+
+            saveMarkers[index++] = m;
+        }
+        Json json = new Json();
+        String str = json.toJson(saveMarkers);
+        System.out.println(str);
+        FileHandle file = Gdx.files.local("saved-track.txt");
+        file.writeString(str, false);
+    }
+
+    private void loadTrack(){
+        Array<Marker> savedMarkers = new Array<>();
+        FileHandle file = Gdx.files.local("saved-track.txt");
+        String str = file.readString();
+        Json json = new Json();
+        JsonValue jsonMarkers = new JsonReader().parse(str);
+        int n = jsonMarkers.size;
+        savedMarkers =   json.readValue( Array.class, Marker.class, jsonMarkers);
+        System.out.println(savedMarkers.size);
+        Vector3 normal = new Vector3();
+        markers.clear();
+        for(int i = 0; i < n; i++){
+
+            ModelInstance instance = new ModelInstance(blockModel, savedMarkers.get(i).position);
+            normal.set(savedMarkers.get(i).normal);
+            instance.transform.rotate(Vector3.Y, normal);
+            markers.add(instance);
+
+        }
+        buildRoad();
+
+    }
+
     private void buildSplineFromMarkers(Array<ModelInstance> markers) {
         Vector3[] controlPoints = new Vector3[markers.size];
         Vector3[] normalControlPoints = new Vector3[markers.size];
@@ -280,8 +347,9 @@ public class Main extends ApplicationAdapter {
 
     private Model buildRoadModelFromSpline(CatmullRomSpline<Vector3> spline){
         int attr = VertexAttributes.Usage.Position | VertexAttributes.Usage.TextureCoordinates;
-        int primitive = GL20.GL_TRIANGLES;
-        Material material = new Material(ColorAttribute.createDiffuse(Color.WHITE), TextureAttribute.createDiffuse(roadTexture));
+        int primitive = wireFrameMode ? GL20.GL_LINES : GL20.GL_TRIANGLES;
+        Material material = wireFrameMode ? new Material(ColorAttribute.createDiffuse(Color.WHITE)) :
+                             new Material(TextureAttribute.createDiffuse(roadTexture));
         int N = 100;
 
         ModelBuilder modelBuilder = new ModelBuilder();
@@ -399,8 +467,9 @@ public class Main extends ApplicationAdapter {
     private final Vector3 intersection = new Vector3();
     private final Plane plane = new Plane(Vector3.Y, 0);
 
-    /** add a marker in the horizontal plane at the place of the mouse cursor */
-    // todo should insert it at the best place in the loop, not per se at the end
+    /** add a marker in the horizontal plane at the place of the mouse cursor.
+     * A marker is a control point for the spline that defines the track layout and showns
+     * as a little block in edit mode. */
     private void addMarker(Camera cam, float screenX, float screenY){
         Ray ray = cam.getPickRay(screenX, screenY);
         Intersector.intersectRayPlane(ray, plane, intersection);
@@ -413,7 +482,6 @@ public class Main extends ApplicationAdapter {
             }
         }
         ModelInstance marker = new ModelInstance(blockModel, intersection);
-        //markers.add(marker);
         insertMarker(marker);
         buildRoad();
     }
