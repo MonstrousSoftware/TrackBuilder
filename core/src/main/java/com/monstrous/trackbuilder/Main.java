@@ -420,26 +420,33 @@ public class Main extends ApplicationAdapter {
 
     // tries to find the best place in the loop to place the new marker
     // by looking for closest existing marker
-    // (but should take into account the track direction)
     private void insertMarker(ModelInstance newMarker){
 
         int closest = 0;
         float minDistance = Float.MAX_VALUE;
         Vector3 newPos = new Vector3();
         newMarker.transform.getTranslation(newPos);
+        Vector3 nxtPos = new Vector3();
+        Vector3 direction = new Vector3();
+        Vector3 dirToNew = new Vector3();
 
         int index = 0;
         for(ModelInstance marker : markers){
             marker.transform.getTranslation(tmpPos);
-            float dist = tmpPos.dst(newPos);
-            if(dist < minDistance){
-                minDistance = dist;
-                closest = index;
+            markers.get(index < markers.size-1 ? index+1 : 0).transform.getTranslation(nxtPos);
+            direction.set(nxtPos).sub(tmpPos);  // vector to next marker
+            dirToNew.set(newPos).sub(tmpPos);   // vector to new marker
+            if(dirToNew.dot(direction) >= 0) {  // is new marker in front of existing marker?
+                float dist = tmpPos.dst(newPos);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    closest = index;
+                }
             }
             index++;
         }
 
-        markers.insert(closest, newMarker);
+        markers.insert(closest+1, newMarker);
     }
 
     private void removeSelectedMarker(){
