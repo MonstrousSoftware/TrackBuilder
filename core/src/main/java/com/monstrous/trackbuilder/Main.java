@@ -45,6 +45,7 @@ public class Main extends ApplicationAdapter {
     private ModelInstance roadModelInstance;
     private Model centreLineModel;
     private ModelInstance centreLineModelInstance;
+    private ModelInstance xyzInstance;
     private boolean wireFrameMode = false;
 
 
@@ -92,7 +93,8 @@ public class Main extends ApplicationAdapter {
         disposables.add(gridModel);
 
         Model xyzModel = modelBuilder.createXYZCoordinates(10, new Material(),VertexAttributes.Usage.Position|VertexAttributes.Usage.ColorPacked );
-        debugInstances.add( new ModelInstance(xyzModel));
+        xyzInstance =  new ModelInstance(xyzModel);
+        debugInstances.add( xyzInstance );
         disposables.add(xyzModel);
 
         blockModel = modelBuilder.createBox(1f, 1f, 1f, new Material(ColorAttribute.createDiffuse(Color.BLUE)),
@@ -137,10 +139,15 @@ public class Main extends ApplicationAdapter {
                 selectedMarker.transform.translate(-.2f, 0, 0);
             if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
                 selectedMarker.transform.translate(.2f, 0, 0);
+            if (Gdx.input.isKeyPressed(Input.Keys.PAGE_UP))
+                selectedMarker.transform.translate(0, .1f, 0);
+            if (Gdx.input.isKeyPressed(Input.Keys.PAGE_DOWN))
+                selectedMarker.transform.translate(0, -.1f, 0);
 
         }
         if (Gdx.input.isKeyPressed(Input.Keys.UP) || Gdx.input.isKeyPressed(Input.Keys.DOWN) ||
-            Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+            Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.RIGHT) ||
+            Gdx.input.isKeyPressed(Input.Keys.PAGE_UP) || Gdx.input.isKeyPressed(Input.Keys.PAGE_DOWN) ) {
 
             buildRoad();
         }
@@ -169,6 +176,8 @@ public class Main extends ApplicationAdapter {
             driveMode = true;
         if(Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) && Gdx.input.isButtonJustPressed(Input.Buttons.LEFT))
             addMarker(editCam, Gdx.input.getX(), Gdx.input.getY());
+        if(Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) && Gdx.input.isButtonJustPressed(Input.Buttons.LEFT))
+            moveCamera(editCam, Gdx.input.getX(), Gdx.input.getY());
         if(Gdx.input.isKeyJustPressed(Input.Keys.X))
             removeSelectedMarker();
         if(Gdx.input.isKeyJustPressed(Input.Keys.W)) {
@@ -377,7 +386,6 @@ public class Main extends ApplicationAdapter {
 
         for(int i = 0; i <N; i++){
             // p1 and p2 : 2 adjacent points on the spline
-
             spline.valueAt(p1, i/(float)N);
             spline.valueAt(p2, ((i+1)%N)/(float)N);
 
@@ -397,11 +405,13 @@ public class Main extends ApplicationAdapter {
             c2.set(d2).scl(width).add(p2);
 
             // add rectangle to the mesh
-            meshBuilder.rect(c0, c1, c2, c3, Vector3.Y);
+            meshBuilder.rect(c0, c1, c2, c3, n1);
         }
         return modelBuilder.end();
 
     }
+
+    private final Vector3 tmpVec = new Vector3();
 
     /** create centre line marking as rectangles */
     private Model buildCentreLineModelFromSpline(CatmullRomSpline<Vector3> spline){
@@ -430,7 +440,6 @@ public class Main extends ApplicationAdapter {
         Vector3 c2 = new Vector3();
         Vector3 c3 = new Vector3();
 
-
         float width = 0.05f;
 
         for(int i = 0; i <N; i++){
@@ -438,12 +447,15 @@ public class Main extends ApplicationAdapter {
 
             spline.valueAt(p1, i/(float)N);
             spline.valueAt(p2, ((i+0.2f)%N)/(float)N);
-            p1.y += 0.05f;
-            p2.y += 0.05f;
-
 
             normalSpline.valueAt(n1, i/(float)N);
             normalSpline.valueAt(n2, ((i+1)%N)/(float)N);
+
+            // move p1 and p2 just above the road surface
+            tmpVec.set(n1).scl(0.05f);
+            p1.add(tmpVec);
+            tmpVec.set(n2).scl(0.05f);
+            p2.add(tmpVec);
 
             // get derivative at both points, rotate 90 degrees to get a vector towards the side of the road
             spline.derivativeAt(d1, i/(float)N);
@@ -466,6 +478,17 @@ public class Main extends ApplicationAdapter {
 
     private final Vector3 intersection = new Vector3();
     private final Plane plane = new Plane(Vector3.Y, 0);
+
+    private void moveCamera(Camera cam, float screenX, float screenY){
+        Ray ray = cam.getPickRay(screenX, screenY);
+        Intersector.intersectRayPlane(ray, plane, intersection);
+        inputController.target.set(intersection);
+        cam.direction.set(intersection).sub(cam.position).nor();
+        cam.up.set(Vector3.Y);
+        cam.update();
+        xyzInstance.transform.setTranslation(intersection);
+
+    }
 
     /** add a marker in the horizontal plane at the place of the mouse cursor.
      * A marker is a control point for the spline that defines the track layout and showns
