@@ -110,7 +110,7 @@ public class Main extends ApplicationAdapter {
         Gdx.input.setInputProcessor(new InputMultiplexer( inputController));
 
         initMarkers();
-        buildRoad();
+        buildRoad(markers);
 
         shapeRenderer = new ShapeRenderer();
 
@@ -149,12 +149,12 @@ public class Main extends ApplicationAdapter {
             Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.RIGHT) ||
             Gdx.input.isKeyPressed(Input.Keys.PAGE_UP) || Gdx.input.isKeyPressed(Input.Keys.PAGE_DOWN) ) {
 
-            buildRoad();
+            buildRoad(markers);
         }
     }
 
     /** recreate road model from marker positions and normals */
-    private void buildRoad(){
+    private void buildRoad(Array<ModelInstance> markers){
         buildSplineFromMarkers(markers);
         if(roadModel != null) {
             roadModel.dispose();
@@ -182,13 +182,14 @@ public class Main extends ApplicationAdapter {
             removeSelectedMarker();
         if(Gdx.input.isKeyJustPressed(Input.Keys.W)) {
             wireFrameMode = !wireFrameMode;
-            buildRoad();
+            buildRoad(markers);
         }
         if(Gdx.input.isKeyJustPressed(Input.Keys.S)) {
-            saveTrack();
+            SaveLoad.saveTrack(Gdx.files.local("saved-track.txt"), markers);
         }
         if(Gdx.input.isKeyJustPressed(Input.Keys.L)) {
-            loadTrack();
+            SaveLoad.loadTrack(Gdx.files.local("saved-track.txt"), markers, blockModel);
+            buildRoad(markers);
         }
 
         moveSelectedMarker();
@@ -257,57 +258,57 @@ public class Main extends ApplicationAdapter {
             markers.add(instance);
         }
     }
-
-    static class Marker {
-        Vector3 position;
-        Vector3 normal;
-    }
-
-    private void saveTrack(){
-        Marker[] saveMarkers = new Marker[markers.size];
-        int index = 0;
-        Vector3 normalVector = new Vector3();
-        for(ModelInstance marker : markers) {
-            Vector3 pos = new Vector3();
-            marker.transform.getTranslation(pos);
-            Marker m = new Marker();
-            m.position = pos;
-
-            normalVector.set(Vector3.Y);
-            normalVector.rot(marker.transform);
-            m.normal = new Vector3(normalVector);
-
-            saveMarkers[index++] = m;
-        }
-        Json json = new Json();
-        String str = json.toJson(saveMarkers);
-        System.out.println(str);
-        FileHandle file = Gdx.files.local("saved-track.txt");
-        file.writeString(str, false);
-    }
-
-    private void loadTrack(){
-        Array<Marker> savedMarkers = new Array<>();
-        FileHandle file = Gdx.files.local("saved-track.txt");
-        String str = file.readString();
-        Json json = new Json();
-        JsonValue jsonMarkers = new JsonReader().parse(str);
-        int n = jsonMarkers.size;
-        savedMarkers =   json.readValue( Array.class, Marker.class, jsonMarkers);
-        System.out.println(savedMarkers.size);
-        Vector3 normal = new Vector3();
-        markers.clear();
-        for(int i = 0; i < n; i++){
-
-            ModelInstance instance = new ModelInstance(blockModel, savedMarkers.get(i).position);
-            normal.set(savedMarkers.get(i).normal);
-            instance.transform.rotate(Vector3.Y, normal);
-            markers.add(instance);
-
-        }
-        buildRoad();
-
-    }
+//
+//    static class Marker {
+//        Vector3 position;
+//        Vector3 normal;
+//    }
+//
+//    private void saveTrack(){
+//        Marker[] saveMarkers = new Marker[markers.size];
+//        int index = 0;
+//        Vector3 normalVector = new Vector3();
+//        for(ModelInstance marker : markers) {
+//            Vector3 pos = new Vector3();
+//            marker.transform.getTranslation(pos);
+//            Marker m = new Marker();
+//            m.position = pos;
+//
+//            normalVector.set(Vector3.Y);
+//            normalVector.rot(marker.transform);
+//            m.normal = new Vector3(normalVector);
+//
+//            saveMarkers[index++] = m;
+//        }
+//        Json json = new Json();
+//        String str = json.toJson(saveMarkers);
+//        System.out.println(str);
+//        FileHandle file = Gdx.files.local("saved-track.txt");
+//        file.writeString(str, false);
+//    }
+//
+//    private void loadTrack(){
+//        Array<Marker> savedMarkers = new Array<>();
+//        FileHandle file = Gdx.files.local("saved-track.txt");
+//        String str = file.readString();
+//        Json json = new Json();
+//        JsonValue jsonMarkers = new JsonReader().parse(str);
+//        int n = jsonMarkers.size;
+//        savedMarkers =   json.readValue( Array.class, Marker.class, jsonMarkers);
+//        System.out.println(savedMarkers.size);
+//        Vector3 normal = new Vector3();
+//        markers.clear();
+//        for(int i = 0; i < n; i++){
+//
+//            ModelInstance instance = new ModelInstance(blockModel, savedMarkers.get(i).position);
+//            normal.set(savedMarkers.get(i).normal);
+//            instance.transform.rotate(Vector3.Y, normal);
+//            markers.add(instance);
+//
+//        }
+//        buildRoad();
+//
+//    }
 
     private void buildSplineFromMarkers(Array<ModelInstance> markers) {
         Vector3[] controlPoints = new Vector3[markers.size];
@@ -506,7 +507,7 @@ public class Main extends ApplicationAdapter {
         }
         ModelInstance marker = new ModelInstance(blockModel, intersection);
         insertMarker(marker);
-        buildRoad();
+        buildRoad(markers);
     }
 
     // tries to find the best place in the loop to place the new marker
@@ -546,7 +547,7 @@ public class Main extends ApplicationAdapter {
         markers.removeValue(selectedMarker, true);
         selectedMarker = null;
 
-        buildRoad();
+        buildRoad(markers);
     }
 
 
