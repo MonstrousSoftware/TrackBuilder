@@ -1,1 +1,1 @@
-[{position:{x:-20,z:20},normal:{y:1}},{position:{x:20,z:25},normal:{y:1}},{position:{x:25,z:-30},normal:{y:1}},{position:{x:-15,z:-24},normal:{y:1}},{position:{x:-50,z:-5},normal:{y:1}},{position:{x:-9.600005,z:-4},normal:{y:1}}]
+[{position:{x:-20,z:20},normal:{y:1}},{position:{x:-0.40000373,z:10.999971},normal:{y:1}},{position:{x:25,z:-30},normal:{y:1}},{position:{x:-15,z:-24},normal:{y:1}},{position:{x:-50,z:-5},normal:{y:1}},{position:{x:-9.600005,z:-4},normal:{y:1}}]

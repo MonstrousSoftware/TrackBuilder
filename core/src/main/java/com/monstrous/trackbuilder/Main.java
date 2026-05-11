@@ -30,8 +30,7 @@ public class Main extends ApplicationAdapter {
     public ModelBatch modelBatch;
     public Array<ModelInstance> instances;
     public Array<ModelInstance> debugInstances;
-    public Array<ModelInstance> markers;
-    public ModelInstance selectedMarker;
+    public Markers controlPoints;
     public Array<Disposable> disposables;
     public Environment environment;
     private ShapeRenderer shapeRenderer;
@@ -40,7 +39,6 @@ public class Main extends ApplicationAdapter {
     private final Vector3[] pathPoints = new Vector3[100];	// to render spline (debug)
     private float time = 0;
     private boolean driveMode = false;
-    private Model blockModel;
     private Model roadModel;
     private ModelInstance roadModelInstance;
     private Model centreLineModel;
@@ -83,7 +81,8 @@ public class Main extends ApplicationAdapter {
 
         instances = new Array<>();
         debugInstances = new Array<>();
-        markers = new Array<>();
+
+        controlPoints = new Markers();
 
 
         ModelBuilder modelBuilder = new ModelBuilder();
@@ -97,10 +96,6 @@ public class Main extends ApplicationAdapter {
         debugInstances.add( xyzInstance );
         disposables.add(xyzModel);
 
-        blockModel = modelBuilder.createBox(1f, 1f, 1f, new Material(ColorAttribute.createDiffuse(Color.BLUE)),
-            VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal);
-        disposables.add(blockModel);
-
         inputController = new CameraInputController(editCam);
         // disable WASD controls, because we want to use these keys for something else
         inputController.forwardKey = Input.Keys.BUTTON_A;
@@ -109,8 +104,8 @@ public class Main extends ApplicationAdapter {
         inputController.rotateRightKey = Input.Keys.BUTTON_A;
         Gdx.input.setInputProcessor(new InputMultiplexer( inputController));
 
-        initMarkers();
-        buildRoad(markers);
+        controlPoints.initMarkers();
+        buildRoad(controlPoints.getMarkers());
 
         shapeRenderer = new ShapeRenderer();
 
@@ -119,6 +114,7 @@ public class Main extends ApplicationAdapter {
 
     /** move selected marker (if any) if an arrow key is pressed */
     private void moveSelectedMarker() {
+        ModelInstance selectedMarker = controlPoints.getSelectedMarker();
         if (selectedMarker == null)
             return;
         if (Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)) {
@@ -149,7 +145,7 @@ public class Main extends ApplicationAdapter {
             Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.RIGHT) ||
             Gdx.input.isKeyPressed(Input.Keys.PAGE_UP) || Gdx.input.isKeyPressed(Input.Keys.PAGE_DOWN) ) {
 
-            buildRoad(markers);
+            buildRoad(controlPoints.getMarkers());
         }
     }
 
@@ -174,22 +170,26 @@ public class Main extends ApplicationAdapter {
             driveMode = false;
         if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_2))
             driveMode = true;
-        if(Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) && Gdx.input.isButtonJustPressed(Input.Buttons.LEFT))
-            addMarker(editCam, Gdx.input.getX(), Gdx.input.getY());
+        if(Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) && Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+            controlPoints.addMarker(editCam, Gdx.input.getX(), Gdx.input.getY());
+            buildRoad(controlPoints.getMarkers());
+        }
         if(Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) && Gdx.input.isButtonJustPressed(Input.Buttons.LEFT))
             moveCamera(editCam, Gdx.input.getX(), Gdx.input.getY());
-        if(Gdx.input.isKeyJustPressed(Input.Keys.X))
-            removeSelectedMarker();
+        if(Gdx.input.isKeyJustPressed(Input.Keys.X)) {
+            controlPoints.removeSelectedMarker();
+            buildRoad(controlPoints.getMarkers());
+        }
         if(Gdx.input.isKeyJustPressed(Input.Keys.W)) {
             wireFrameMode = !wireFrameMode;
-            buildRoad(markers);
+            buildRoad(controlPoints.getMarkers());
         }
         if(Gdx.input.isKeyJustPressed(Input.Keys.S)) {
-            SaveLoad.saveTrack(Gdx.files.local("saved-track.txt"), markers);
+            SaveLoad.saveTrack(Gdx.files.local("saved-track.txt"), controlPoints);
         }
         if(Gdx.input.isKeyJustPressed(Input.Keys.L)) {
-            SaveLoad.loadTrack(Gdx.files.local("saved-track.txt"), markers, blockModel);
-            buildRoad(markers);
+            SaveLoad.loadTrack(Gdx.files.local("saved-track.txt"), controlPoints);
+            buildRoad(controlPoints.getMarkers());
         }
 
         moveSelectedMarker();
@@ -202,7 +202,7 @@ public class Main extends ApplicationAdapter {
         placeDriveCamera(driveCam, time);
 
         if(!driveMode)
-            highlightMarker(editCam, Gdx.input.getX(), Gdx.input.getY());
+            controlPoints.highlightMarker(editCam, Gdx.input.getX(), Gdx.input.getY());
 
         ScreenUtils.clear(Color.TEAL, true);
 
@@ -214,7 +214,7 @@ public class Main extends ApplicationAdapter {
         modelBatch.render(centreLineModelInstance, environment);
         if(!driveMode) {
             modelBatch.render(debugInstances, environment);
-            modelBatch.render(markers, environment);
+            modelBatch.render(controlPoints.getMarkers(), environment);
         }
         modelBatch.end();
 
@@ -235,80 +235,6 @@ public class Main extends ApplicationAdapter {
         driveCam.update();
     }
 
-
-    private void initMarkers() {
-        float ht = 0;
-        float scl = 1f;
-
-        markers.clear();
-
-        Vector3[] controlPoints = {
-            new Vector3(-20 * scl, ht, 20 * scl),
-            new Vector3(20 * scl, ht, 25 * scl),
-
-            new Vector3(25 * scl, ht, -30 * scl),
-
-            new Vector3(-15 * scl, ht, -24 * scl),
-            new Vector3(-50 * scl, ht, -5 * scl),
-
-            new Vector3(-15 * scl, ht, 5 * scl),
-        };
-        for (Vector3 p : controlPoints) {
-            ModelInstance instance = new ModelInstance(blockModel, p);
-            markers.add(instance);
-        }
-    }
-//
-//    static class Marker {
-//        Vector3 position;
-//        Vector3 normal;
-//    }
-//
-//    private void saveTrack(){
-//        Marker[] saveMarkers = new Marker[markers.size];
-//        int index = 0;
-//        Vector3 normalVector = new Vector3();
-//        for(ModelInstance marker : markers) {
-//            Vector3 pos = new Vector3();
-//            marker.transform.getTranslation(pos);
-//            Marker m = new Marker();
-//            m.position = pos;
-//
-//            normalVector.set(Vector3.Y);
-//            normalVector.rot(marker.transform);
-//            m.normal = new Vector3(normalVector);
-//
-//            saveMarkers[index++] = m;
-//        }
-//        Json json = new Json();
-//        String str = json.toJson(saveMarkers);
-//        System.out.println(str);
-//        FileHandle file = Gdx.files.local("saved-track.txt");
-//        file.writeString(str, false);
-//    }
-//
-//    private void loadTrack(){
-//        Array<Marker> savedMarkers = new Array<>();
-//        FileHandle file = Gdx.files.local("saved-track.txt");
-//        String str = file.readString();
-//        Json json = new Json();
-//        JsonValue jsonMarkers = new JsonReader().parse(str);
-//        int n = jsonMarkers.size;
-//        savedMarkers =   json.readValue( Array.class, Marker.class, jsonMarkers);
-//        System.out.println(savedMarkers.size);
-//        Vector3 normal = new Vector3();
-//        markers.clear();
-//        for(int i = 0; i < n; i++){
-//
-//            ModelInstance instance = new ModelInstance(blockModel, savedMarkers.get(i).position);
-//            normal.set(savedMarkers.get(i).normal);
-//            instance.transform.rotate(Vector3.Y, normal);
-//            markers.add(instance);
-//
-//        }
-//        buildRoad();
-//
-//    }
 
     private void buildSplineFromMarkers(Array<ModelInstance> markers) {
         Vector3[] controlPoints = new Vector3[markers.size];
@@ -477,107 +403,17 @@ public class Main extends ApplicationAdapter {
 
     }
 
-    private final Vector3 intersection = new Vector3();
-    private final Plane plane = new Plane(Vector3.Y, 0);
 
     private void moveCamera(Camera cam, float screenX, float screenY){
         Ray ray = cam.getPickRay(screenX, screenY);
+        Plane plane = new Plane(Vector3.Y, 0);
+        Vector3 intersection = new Vector3();
         Intersector.intersectRayPlane(ray, plane, intersection);
         inputController.target.set(intersection);
         cam.direction.set(intersection).sub(cam.position).nor();
         cam.up.set(Vector3.Y);
         cam.update();
         xyzInstance.transform.setTranslation(intersection);
-
-    }
-
-    /** add a marker in the horizontal plane at the place of the mouse cursor.
-     * A marker is a control point for the spline that defines the track layout and showns
-     * as a little block in edit mode. */
-    private void addMarker(Camera cam, float screenX, float screenY){
-        Ray ray = cam.getPickRay(screenX, screenY);
-        Intersector.intersectRayPlane(ray, plane, intersection);
-        // don't add a marker if too close to a selected marker
-        // this to avoid multiple markers in the same position
-        if(selectedMarker != null) {
-            selectedMarker.transform.getTranslation(tmpPos);
-            if(tmpPos.dst2(intersection) < SELECT_DISTANCE2){
-                return;
-            }
-        }
-        ModelInstance marker = new ModelInstance(blockModel, intersection);
-        insertMarker(marker);
-        buildRoad(markers);
-    }
-
-    // tries to find the best place in the loop to place the new marker
-    // by looking for closest existing marker
-    private void insertMarker(ModelInstance newMarker){
-
-        int closest = 0;
-        float minDistance = Float.MAX_VALUE;
-        Vector3 newPos = new Vector3();
-        newMarker.transform.getTranslation(newPos);
-        Vector3 nxtPos = new Vector3();
-        Vector3 direction = new Vector3();
-        Vector3 dirToNew = new Vector3();
-
-        int index = 0;
-        for(ModelInstance marker : markers){
-            marker.transform.getTranslation(tmpPos);
-            markers.get(index < markers.size-1 ? index+1 : 0).transform.getTranslation(nxtPos);
-            direction.set(nxtPos).sub(tmpPos);  // vector to next marker
-            dirToNew.set(newPos).sub(tmpPos);   // vector to new marker
-            if(dirToNew.dot(direction) >= 0) {  // is new marker in front of existing marker?
-                float dist = tmpPos.dst(newPos);
-                if (dist < minDistance) {
-                    minDistance = dist;
-                    closest = index;
-                }
-            }
-            index++;
-        }
-
-        markers.insert(closest+1, newMarker);
-    }
-
-    private void removeSelectedMarker(){
-        if(selectedMarker == null)
-            return;
-        markers.removeValue(selectedMarker, true);
-        selectedMarker = null;
-
-        buildRoad(markers);
-    }
-
-
-
-    private Vector3 tmpPos = new Vector3();
-    private final float SELECT_DISTANCE2 = 4f;
-
-    /** highlight the marker under the mouse cursor (if any) */
-    // note if the view is at a low angle and the marker is above ground level, the mouse cursor
-    // may need to be held below the marker.
-    private void highlightMarker(Camera cam, float screenX, float screenY){
-        Ray ray = cam.getPickRay(screenX, screenY);
-        Plane plane = new Plane(Vector3.Y, 0);
-
-        Intersector.intersectRayPlane(ray, plane, intersection);
-        for(ModelInstance marker : markers){
-            marker.transform.getTranslation(tmpPos);
-            intersection.y = 0;
-            tmpPos.y = 0; // project to ground plane to ignore height difference
-            if(tmpPos.dst2(intersection) < SELECT_DISTANCE2) {
-                if(selectedMarker == marker)    // marker is already selected, do nothing
-                    return;
-                if(selectedMarker != null) // deselect previous selected marker
-                    selectedMarker.materials.get(0).set(ColorAttribute.createDiffuse(Color.BLUE));
-                // select chosen marker
-                selectedMarker = marker;
-                selectedMarker.materials.get(0).set(ColorAttribute.createDiffuse(Color.YELLOW));
-                break;
-            }
-        }
     }
 
     @Override
@@ -586,5 +422,6 @@ public class Main extends ApplicationAdapter {
             d.dispose();
         roadModel.dispose();
         centreLineModel.dispose();
+        controlPoints.dispose();
     }
 }

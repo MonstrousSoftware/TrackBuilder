@@ -2,7 +2,6 @@ package com.monstrous.trackbuilder;
 
 
 import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
@@ -17,11 +16,11 @@ public class SaveLoad {
         Vector3 normal;
     }
 
-    public static void saveTrack(FileHandle file, Array<ModelInstance> markers){
-        Marker[] saveMarkers = new Marker[markers.size];
+    public static void saveTrack(FileHandle file, Markers controlPoints){
+        Marker[] saveMarkers = new Marker[controlPoints.getMarkers().size];
         int index = 0;
         Vector3 normalVector = new Vector3();
-        for(ModelInstance marker : markers) {
+        for(ModelInstance marker : controlPoints.getMarkers()) {
             Vector3 pos = new Vector3();
             marker.transform.getTranslation(pos);
             Marker m = new Marker();
@@ -36,30 +35,17 @@ public class SaveLoad {
         Json json = new Json();
         String str = json.toJson(saveMarkers);
         System.out.println(str);
-        //FileHandle file = Gdx.files.local("saved-track.txt");
         file.writeString(str, false);
     }
 
-    public static void loadTrack(FileHandle file, Array<ModelInstance> markers, Model blockModel){
-        Array<Marker> savedMarkers;
-        //FileHandle file = Gdx.files.local("saved-track.txt");
+    public static void loadTrack(FileHandle file, Markers controlPoints){
         String str = file.readString();
         Json json = new Json();
         JsonValue jsonMarkers = new JsonReader().parse(str);
-        int n = jsonMarkers.size;
-        savedMarkers =   json.readValue( Array.class, Marker.class, jsonMarkers);
-        System.out.println(savedMarkers.size);
-        Vector3 normal = new Vector3();
-        markers.clear();
-        for(int i = 0; i < n; i++){
-
-            ModelInstance instance = new ModelInstance(blockModel, savedMarkers.get(i).position);
-            normal.set(savedMarkers.get(i).normal);
-            instance.transform.rotate(Vector3.Y, normal);
-            markers.add(instance);
-
+        Array<Marker> savedMarkers =   json.readValue( Array.class, Marker.class, jsonMarkers);
+        controlPoints.clear();
+        for(int i = 0; i < jsonMarkers.size; i++){
+            controlPoints.appendMarker(savedMarkers.get(i).position, savedMarkers.get(i).normal);
         }
-        //buildRoad();
-
     }
 }
