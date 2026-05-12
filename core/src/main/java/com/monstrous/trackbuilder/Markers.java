@@ -21,11 +21,11 @@ public class Markers implements Disposable {
     private final Array<Marker> markers;
     private Marker selectedMarker;
     private CatmullRomSpline<Vector3> positionSpline;
+    private CatmullRomSpline<Vector3> normalSpline;
     private final Model blockModel;
     private final Model xyzModel;
     private final Vector3 intersection = new Vector3();
     private final Plane plane = new Plane(Vector3.Y, 0);
-    //private final Vector3 tmpPos = new Vector3();
     private final Array<ModelInstance> cubes;
     public final Array<ModelInstance> xyzMarkers;
 
@@ -51,6 +51,10 @@ public class Markers implements Disposable {
 
     public CatmullRomSpline<Vector3> getPositionSpline() {
         return positionSpline;
+    }
+
+    public CatmullRomSpline<Vector3> getNormalSpline() {
+        return normalSpline;
     }
 
     public void clear() {
@@ -103,13 +107,7 @@ public class Markers implements Disposable {
             if(selectedMarker.position.dst2(intersection) < SELECT_DISTANCE2){
                 return;
             }
-//            selectedMarker.transform.getTranslation(tmpPos);
-//            float SELECT_DISTANCE2 = 4f;
-//            if(tmpPos.dst2(intersection) < SELECT_DISTANCE2){
-//                return;
-//            }
         }
-        //ModelInstance marker = new ModelInstance(blockModel, intersection);
         insertMarker(new Marker(intersection));
     }
 
@@ -155,21 +153,24 @@ public class Markers implements Disposable {
         updateRenderables();
     }
 
+    public void bankSelectedMarker(float dx){
+        if(selectedMarker == null)
+            return;
+        selectedMarker.normal.rotate(selectedMarker.fwd, dx);
+        updateRenderables();
+    }
+
 
     /** highlight (select) the marker under the mouse cursor (if any) */
     public void highlightMarker(Camera cam, float screenX, float screenY){
         Ray ray = cam.getPickRay(screenX, screenY);
         float radius = 0.75f;
         for(Marker marker : markers){
-            //marker.transform.getTranslation(tmpPos);
             if( Intersector.intersectRaySphere(ray, marker.position, radius, intersection) ){
                 if(selectedMarker == marker)    // marker is already selected, do nothing
                     return;
-//                if(selectedMarker != null) // deselect previous selected marker
-//                    selectedMarker.materials.get(0).set(ColorAttribute.createDiffuse(Color.BLUE));
                 // select chosen marker
                 selectedMarker = marker;
-//                selectedMarker.materials.get(0).set(ColorAttribute.createDiffuse(Color.YELLOW));
                 updateRenderables();
                 break;
             }
@@ -179,26 +180,33 @@ public class Markers implements Disposable {
     /** call this whenever the markers change */
     public void updateRenderables(){
         Vector3[] controlPoints = new Vector3[markers.size];
+        Vector3[] normalControlPoints = new Vector3[markers.size];
         int index = 0;
         for(Marker marker : markers){
             controlPoints[index] = marker.position;
+            normalControlPoints[index] = marker.normal;
             index++;
         }
         positionSpline = new CatmullRomSpline<>(controlPoints, true);
+        normalSpline = new CatmullRomSpline<>(normalControlPoints, true);
 
-        Vector3 fwd = new Vector3();
+        //Vector3 fwd = new Vector3();
         cubes.clear();
         xyzMarkers.clear();
         for(Marker marker : markers){
             float t = positionSpline.locate(marker.position);   // find advancement on spline
-            positionSpline.derivativeAt(fwd, t);    // and use that to find derivative of the marker
-            fwd.nor();
+            positionSpline.derivativeAt(marker.fwd, t);    // and use that to find derivative of the marker
+            marker.fwd.nor();
 
             ModelInstance cube = new ModelInstance(blockModel, marker.position);
             cube.materials.get(0).set( ColorAttribute.createDiffuse(marker == selectedMarker ? Color.YELLOW: Color.BLUE));
+            cube.transform.rotate(Vector3.Y, marker.normal);
+            cube.transform.rotate(Vector3.Z, marker.fwd);
             cubes.add(cube);
             ModelInstance xyz = new ModelInstance(xyzModel, marker.position);
-            xyz.transform.rotate(Vector3.Z, fwd);
+            // the order is important
+            xyz.transform.rotate(Vector3.Y, marker.normal);
+            xyz.transform.rotate(Vector3.Z, marker.fwd);
             xyzMarkers.add(xyz);
         }
     }

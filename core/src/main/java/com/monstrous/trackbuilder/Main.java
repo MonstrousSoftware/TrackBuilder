@@ -34,7 +34,6 @@ public class Main extends ApplicationAdapter {
     public Array<Disposable> disposables;
     public Environment environment;
     private ShapeRenderer shapeRenderer;
-    private CatmullRomSpline<Vector3> normalSpline; // todo
     private final Vector3[] pathPoints = new Vector3[100];	// to render spline (debug)
     private float time = 0;
     private boolean driveMode = false;
@@ -82,8 +81,6 @@ public class Main extends ApplicationAdapter {
         debugInstances = new Array<>();
 
         controlPoints = new Markers();
-//        xyzMarkers = new Array<>();
-
 
         ModelBuilder modelBuilder = new ModelBuilder();
 
@@ -96,8 +93,6 @@ public class Main extends ApplicationAdapter {
         debugInstances.add( xyzInstance );
         disposables.add(xyzModel);
 
-//        xyzSmallModel = modelBuilder.createXYZCoordinates(3, new Material(),VertexAttributes.Usage.Position|VertexAttributes.Usage.ColorPacked );
-//        disposables.add(xyzSmallModel);
 
         inputController = new CameraInputController(editCam);
         // disable WASD controls, because we want to use these keys for something else
@@ -122,26 +117,12 @@ public class Main extends ApplicationAdapter {
             return;
         if (Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)) {
 
-//            Vector3 localZ = new Vector3(selectedMarker.transform.val[Matrix4.M20], selectedMarker.transform.val[Matrix4.M21],selectedMarker.transform.val[Matrix4.M22]);
-//            if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
-//                selectedMarker.transform.rotate(localZ, -0.1f);
-//            }
-//            if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-//                selectedMarker.transform.rotate(localZ, 1f);
-//            }
-//            if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
-//                mat.rotate(Vector3.Z, -1f);
-//            if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
-//                mat.rotate(Vector3.Z, 1f);
-//
-//            if (Gdx.input.isKeyPressed(Input.Keys.UP))
-//                selectedMarker.transform.rotate(Vector3.X, -1f);
-//            if (Gdx.input.isKeyPressed(Input.Keys.DOWN))
-//                selectedMarker.transform.rotate(Vector3.X, 1f);
-//            if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
-//                selectedMarker.transform.rotate(Vector3.Z, -1f);
-//            if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
-//                selectedMarker.transform.rotate(Vector3.Z, 1f);
+            if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
+                controlPoints.bankSelectedMarker(-0.1f);
+            }
+            if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+                controlPoints.bankSelectedMarker(0.1f);
+            }
         } else {
             if (Gdx.input.isKeyPressed(Input.Keys.UP))
                 controlPoints.moveSelectedMarker(-0.2f, 0f, 0f);
@@ -169,37 +150,16 @@ public class Main extends ApplicationAdapter {
     /** recreate road model from marker positions and normals */
     private void buildRoad(Markers markers){
 
-
-
-        buildSplineFromMarkers(markers);
-
-        // place xyz axes per control point
-        Vector3 pos = new Vector3();
-        Vector3 fwd = new Vector3();
-
-
-        // todo
-//        xyzMarkers.clear();
-//        for(ModelInstance marker : markers){
-//            ModelInstance xyz = new ModelInstance(xyzSmallModel);
-//            xyz.transform.set(marker.transform);
-//            xyzMarkers.add(xyz);
-//            marker.transform.getTranslation(pos);
-//            float t = positionSpline.locate(pos);   // find advancement on spline
-//            positionSpline.derivativeAt(fwd, t);    // and use that to find derivative of the marker
-//            fwd.nor();
-//            xyz.transform.rotate(Vector3.Z, fwd);
-//            marker.transform.rotate(Vector3.Z, fwd);
-//        }
+        buildSplineFromMarkers(markers);    // actually just the debug line
 
         if(roadModel != null) {
             roadModel.dispose();
             centreLineModel.dispose();
         }
 
-        roadModel = buildRoadModelFromSpline(controlPoints.getPositionSpline());
+        roadModel = buildRoadModelFromSpline(controlPoints.getPositionSpline(), controlPoints.getNormalSpline());
         roadModelInstance = new ModelInstance(roadModel);
-        centreLineModel = buildCentreLineModelFromSpline(controlPoints.getPositionSpline());
+        centreLineModel = buildCentreLineModelFromSpline(controlPoints.getPositionSpline(), controlPoints.getNormalSpline());
         centreLineModelInstance =  new ModelInstance(centreLineModel);
     }
 
@@ -272,29 +232,30 @@ public class Main extends ApplicationAdapter {
     private void placeDriveCamera( PerspectiveCamera driveCam, float t){
         controlPoints.getPositionSpline().valueAt(driveCam.position, t);
         driveCam.position.y += 0.3f;
-        normalSpline.valueAt(driveCam.up, t);
+        driveCam.up.set(Vector3.Y);
+        //controlPoints.getNormalSpline().valueAt(driveCam.up, t);
         controlPoints.getPositionSpline().derivativeAt(driveCam.direction, t);
         driveCam.update();
     }
 
 
     private void buildSplineFromMarkers(Markers markers) {
-        Array<Marker> markerArray = markers.getMarkers();
-        //Vector3[] controlPoints = new Vector3[markerArray.size];
-        Vector3[] normalControlPoints = new Vector3[markerArray.size];
-
-        int index = 0;
-        for(Marker marker : markerArray){
-            //controlPoints[index] = marker.position;
+//        Array<Marker> markerArray = markers.getMarkers();
+//        //Vector3[] controlPoints = new Vector3[markerArray.size];
+//        Vector3[] normalControlPoints = new Vector3[markerArray.size];
 //
-//            Vector3 normalVector = new Vector3(Vector3.Y);
-//            normalVector.rot(marker.transform);
-            normalControlPoints[index] = marker.normal;
-
-            index++;
-        }
-        //positionSpline = new CatmullRomSpline<Vector3>(controlPoints, true);
-        normalSpline = new CatmullRomSpline<Vector3>(normalControlPoints, true);
+//        int index = 0;
+//        for(Marker marker : markerArray){
+//            //controlPoints[index] = marker.position;
+////
+////            Vector3 normalVector = new Vector3(Vector3.Y);
+////            normalVector.rot(marker.transform);
+//            normalControlPoints[index] = marker.normal;
+//
+//            index++;
+//        }
+//        //positionSpline = new CatmullRomSpline<Vector3>(controlPoints, true);
+//        normalSpline = new CatmullRomSpline<Vector3>(normalControlPoints, true);
 
         // fill array of points for debug render
         for(int i = 0; i < 100; i++) {
@@ -313,7 +274,7 @@ public class Main extends ApplicationAdapter {
         for(int i = 0; i < 100-1; i++)
         {
             shapeRenderer.line(pathPoints[i], pathPoints[i+1]);
-            normalSpline.valueAt(normal, i/100f);
+            controlPoints.getNormalSpline().valueAt(normal, i/100f);
             normal.add(pathPoints[i]);
             shapeRenderer.line(pathPoints[i], normal);
         }
@@ -322,7 +283,7 @@ public class Main extends ApplicationAdapter {
     }
 
 
-    private Model buildRoadModelFromSpline(CatmullRomSpline<Vector3> spline){
+    private Model buildRoadModelFromSpline(CatmullRomSpline<Vector3> spline, CatmullRomSpline<Vector3> normalSpline){
         int attr = VertexAttributes.Usage.Position | VertexAttributes.Usage.TextureCoordinates;
         int primitive = wireFrameMode ? GL20.GL_LINES : GL20.GL_TRIANGLES;
         Material material = wireFrameMode ? new Material(ColorAttribute.createDiffuse(Color.WHITE)) :
@@ -382,7 +343,7 @@ public class Main extends ApplicationAdapter {
     private final Vector3 tmpVec = new Vector3();
 
     /** create centre line marking as rectangles */
-    private Model buildCentreLineModelFromSpline(CatmullRomSpline<Vector3> spline){
+    private Model buildCentreLineModelFromSpline(CatmullRomSpline<Vector3> spline, CatmullRomSpline<Vector3> normalSpline){
         int attr = VertexAttributes.Usage.Position | VertexAttributes.Usage.ColorPacked;
         int primitive = GL20.GL_TRIANGLES;
         Material material = new Material(ColorAttribute.createDiffuse(Color.LIGHT_GRAY));
