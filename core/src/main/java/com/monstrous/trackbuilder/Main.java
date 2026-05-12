@@ -34,8 +34,7 @@ public class Main extends ApplicationAdapter {
     public Array<Disposable> disposables;
     public Environment environment;
     private ShapeRenderer shapeRenderer;
-    private CatmullRomSpline<Vector3> positionSpline;
-    private CatmullRomSpline<Vector3> normalSpline;
+    private CatmullRomSpline<Vector3> normalSpline; // todo
     private final Vector3[] pathPoints = new Vector3[100];	// to render spline (debug)
     private float time = 0;
     private boolean driveMode = false;
@@ -83,6 +82,7 @@ public class Main extends ApplicationAdapter {
         debugInstances = new Array<>();
 
         controlPoints = new Markers();
+//        xyzMarkers = new Array<>();
 
 
         ModelBuilder modelBuilder = new ModelBuilder();
@@ -96,6 +96,9 @@ public class Main extends ApplicationAdapter {
         debugInstances.add( xyzInstance );
         disposables.add(xyzModel);
 
+//        xyzSmallModel = modelBuilder.createXYZCoordinates(3, new Material(),VertexAttributes.Usage.Position|VertexAttributes.Usage.ColorPacked );
+//        disposables.add(xyzSmallModel);
+
         inputController = new CameraInputController(editCam);
         // disable WASD controls, because we want to use these keys for something else
         inputController.forwardKey = Input.Keys.BUTTON_A;
@@ -105,7 +108,7 @@ public class Main extends ApplicationAdapter {
         Gdx.input.setInputProcessor(new InputMultiplexer( inputController));
 
         controlPoints.initMarkers();
-        buildRoad(controlPoints.getMarkers());
+        buildRoad(controlPoints);
 
         shapeRenderer = new ShapeRenderer();
 
@@ -114,52 +117,89 @@ public class Main extends ApplicationAdapter {
 
     /** move selected marker (if any) if an arrow key is pressed */
     private void moveSelectedMarker() {
-        ModelInstance selectedMarker = controlPoints.getSelectedMarker();
+        Marker selectedMarker = controlPoints.getSelectedMarker();
         if (selectedMarker == null)
             return;
         if (Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)) {
-            if (Gdx.input.isKeyPressed(Input.Keys.UP))
-                selectedMarker.transform.rotate(Vector3.X, -1f);
-            if (Gdx.input.isKeyPressed(Input.Keys.DOWN))
-                selectedMarker.transform.rotate(Vector3.X, 1f);
-            if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
-                selectedMarker.transform.rotate(Vector3.Z, -1f);
-            if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
-                selectedMarker.transform.rotate(Vector3.Z, 1f);
+
+//            Vector3 localZ = new Vector3(selectedMarker.transform.val[Matrix4.M20], selectedMarker.transform.val[Matrix4.M21],selectedMarker.transform.val[Matrix4.M22]);
+//            if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
+//                selectedMarker.transform.rotate(localZ, -0.1f);
+//            }
+//            if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+//                selectedMarker.transform.rotate(localZ, 1f);
+//            }
+//            if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
+//                mat.rotate(Vector3.Z, -1f);
+//            if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
+//                mat.rotate(Vector3.Z, 1f);
+//
+//            if (Gdx.input.isKeyPressed(Input.Keys.UP))
+//                selectedMarker.transform.rotate(Vector3.X, -1f);
+//            if (Gdx.input.isKeyPressed(Input.Keys.DOWN))
+//                selectedMarker.transform.rotate(Vector3.X, 1f);
+//            if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
+//                selectedMarker.transform.rotate(Vector3.Z, -1f);
+//            if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
+//                selectedMarker.transform.rotate(Vector3.Z, 1f);
         } else {
             if (Gdx.input.isKeyPressed(Input.Keys.UP))
-                selectedMarker.transform.translate(0, 0, -.2f);
+                controlPoints.moveSelectedMarker(-0.2f, 0f, 0f);
             if (Gdx.input.isKeyPressed(Input.Keys.DOWN))
-                selectedMarker.transform.translate(0, 0, .2f);
+                controlPoints.moveSelectedMarker(0.2f, 0f, 0f);
             if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
-                selectedMarker.transform.translate(-.2f, 0, 0);
+                controlPoints.moveSelectedMarker(0f, 0f, -0.2f);
             if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
-                selectedMarker.transform.translate(.2f, 0, 0);
+                controlPoints.moveSelectedMarker(0f, 0f, 0.2f);
             if (Gdx.input.isKeyPressed(Input.Keys.PAGE_UP))
-                selectedMarker.transform.translate(0, .1f, 0);
+                controlPoints.moveSelectedMarker(0, 0.2f,  0f);
             if (Gdx.input.isKeyPressed(Input.Keys.PAGE_DOWN))
-                selectedMarker.transform.translate(0, -.1f, 0);
+                controlPoints.moveSelectedMarker(0f, -0.2f, 0f);
 
         }
         if (Gdx.input.isKeyPressed(Input.Keys.UP) || Gdx.input.isKeyPressed(Input.Keys.DOWN) ||
             Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.RIGHT) ||
             Gdx.input.isKeyPressed(Input.Keys.PAGE_UP) || Gdx.input.isKeyPressed(Input.Keys.PAGE_DOWN) ) {
 
-            buildRoad(controlPoints.getMarkers());
+            //controlPoints.updateRenderables();
+            buildRoad(controlPoints);
         }
     }
 
     /** recreate road model from marker positions and normals */
-    private void buildRoad(Array<ModelInstance> markers){
+    private void buildRoad(Markers markers){
+
+
+
         buildSplineFromMarkers(markers);
+
+        // place xyz axes per control point
+        Vector3 pos = new Vector3();
+        Vector3 fwd = new Vector3();
+
+
+        // todo
+//        xyzMarkers.clear();
+//        for(ModelInstance marker : markers){
+//            ModelInstance xyz = new ModelInstance(xyzSmallModel);
+//            xyz.transform.set(marker.transform);
+//            xyzMarkers.add(xyz);
+//            marker.transform.getTranslation(pos);
+//            float t = positionSpline.locate(pos);   // find advancement on spline
+//            positionSpline.derivativeAt(fwd, t);    // and use that to find derivative of the marker
+//            fwd.nor();
+//            xyz.transform.rotate(Vector3.Z, fwd);
+//            marker.transform.rotate(Vector3.Z, fwd);
+//        }
+
         if(roadModel != null) {
             roadModel.dispose();
             centreLineModel.dispose();
         }
 
-        roadModel = buildRoadModelFromSpline(positionSpline);
+        roadModel = buildRoadModelFromSpline(controlPoints.getPositionSpline());
         roadModelInstance = new ModelInstance(roadModel);
-        centreLineModel = buildCentreLineModelFromSpline(positionSpline);
+        centreLineModel = buildCentreLineModelFromSpline(controlPoints.getPositionSpline());
         centreLineModelInstance =  new ModelInstance(centreLineModel);
     }
 
@@ -172,24 +212,24 @@ public class Main extends ApplicationAdapter {
             driveMode = true;
         if(Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) && Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
             controlPoints.addMarker(editCam, Gdx.input.getX(), Gdx.input.getY());
-            buildRoad(controlPoints.getMarkers());
+            buildRoad(controlPoints);
         }
         if(Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) && Gdx.input.isButtonJustPressed(Input.Buttons.LEFT))
             moveCamera(editCam, Gdx.input.getX(), Gdx.input.getY());
         if(Gdx.input.isKeyJustPressed(Input.Keys.X)) {
             controlPoints.removeSelectedMarker();
-            buildRoad(controlPoints.getMarkers());
+            buildRoad(controlPoints);
         }
         if(Gdx.input.isKeyJustPressed(Input.Keys.W)) {
             wireFrameMode = !wireFrameMode;
-            buildRoad(controlPoints.getMarkers());
+            buildRoad(controlPoints);
         }
         if(Gdx.input.isKeyJustPressed(Input.Keys.S)) {
             SaveLoad.saveTrack(Gdx.files.local("saved-track.txt"), controlPoints);
         }
         if(Gdx.input.isKeyJustPressed(Input.Keys.L)) {
             SaveLoad.loadTrack(Gdx.files.local("saved-track.txt"), controlPoints);
-            buildRoad(controlPoints.getMarkers());
+            buildRoad(controlPoints);
         }
 
         moveSelectedMarker();
@@ -213,8 +253,10 @@ public class Main extends ApplicationAdapter {
         modelBatch.render(roadModelInstance, environment);
         modelBatch.render(centreLineModelInstance, environment);
         if(!driveMode) {
+            controlPoints.render(modelBatch, environment);
             modelBatch.render(debugInstances, environment);
-            modelBatch.render(controlPoints.getMarkers(), environment);
+//            modelBatch.render(xyzMarkers, environment);
+//            modelBatch.render(controlPoints.getMarkers(), environment);
         }
         modelBatch.end();
 
@@ -228,37 +270,36 @@ public class Main extends ApplicationAdapter {
     }
 
     private void placeDriveCamera( PerspectiveCamera driveCam, float t){
-        positionSpline.valueAt(driveCam.position, t);
+        controlPoints.getPositionSpline().valueAt(driveCam.position, t);
         driveCam.position.y += 0.3f;
         normalSpline.valueAt(driveCam.up, t);
-        positionSpline.derivativeAt(driveCam.direction, t);
+        controlPoints.getPositionSpline().derivativeAt(driveCam.direction, t);
         driveCam.update();
     }
 
 
-    private void buildSplineFromMarkers(Array<ModelInstance> markers) {
-        Vector3[] controlPoints = new Vector3[markers.size];
-        Vector3[] normalControlPoints = new Vector3[markers.size];
+    private void buildSplineFromMarkers(Markers markers) {
+        Array<Marker> markerArray = markers.getMarkers();
+        //Vector3[] controlPoints = new Vector3[markerArray.size];
+        Vector3[] normalControlPoints = new Vector3[markerArray.size];
 
         int index = 0;
-        for(ModelInstance marker : markers){
-            Vector3 pos = new Vector3();
-            marker.transform.getTranslation(pos);
-            controlPoints[index] = pos;
-
-            Vector3 normalVector = new Vector3(Vector3.Y);
-            normalVector.rot(marker.transform);
-            normalControlPoints[index] = normalVector;
+        for(Marker marker : markerArray){
+            //controlPoints[index] = marker.position;
+//
+//            Vector3 normalVector = new Vector3(Vector3.Y);
+//            normalVector.rot(marker.transform);
+            normalControlPoints[index] = marker.normal;
 
             index++;
         }
-        positionSpline = new CatmullRomSpline<Vector3>(controlPoints, true);
+        //positionSpline = new CatmullRomSpline<Vector3>(controlPoints, true);
         normalSpline = new CatmullRomSpline<Vector3>(normalControlPoints, true);
 
         // fill array of points for debug render
         for(int i = 0; i < 100; i++) {
             Vector3 out = new Vector3();
-            positionSpline.valueAt(out, i/100f);
+            controlPoints.getPositionSpline().valueAt(out, i/100f);
             pathPoints[i] = out;
         }
     }

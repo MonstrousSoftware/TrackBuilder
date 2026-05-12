@@ -11,29 +11,29 @@ import com.badlogic.gdx.utils.JsonValue;
 
 public class SaveLoad {
 
-    private static class Marker {
-        Vector3 position;
-        Vector3 normal;
-    }
+//    private static class Marker {
+//        Vector3 position;
+//        Vector3 normal;
+//    }
 
     public static void saveTrack(FileHandle file, Markers controlPoints){
-        Marker[] saveMarkers = new Marker[controlPoints.getMarkers().size];
-        int index = 0;
-        Vector3 normalVector = new Vector3();
-        for(ModelInstance marker : controlPoints.getMarkers()) {
-            Vector3 pos = new Vector3();
-            marker.transform.getTranslation(pos);
-            Marker m = new Marker();
-            m.position = pos;
-
-            normalVector.set(Vector3.Y);
-            normalVector.rot(marker.transform);
-            m.normal = new Vector3(normalVector);
-
-            saveMarkers[index++] = m;
-        }
+//        Marker[] saveMarkers = new Marker[controlPoints.getMarkers().size];
+//        int index = 0;
+//        Vector3 normalVector = new Vector3();
+//        for(Marker marker : controlPoints.getMarkers()) {
+//            Vector3 pos = new Vector3();
+//            marker.transform.getTranslation(pos);
+//            Marker m = new Marker();
+//            m.position = pos;
+//
+//            normalVector.set(Vector3.Y);
+//            normalVector.rot(marker.transform);
+//            m.normal = new Vector3(normalVector);
+//
+//            saveMarkers[index++] = m;
+//        }
         Json json = new Json();
-        String str = json.toJson(saveMarkers);
+        String str = json.toJson(controlPoints.getMarkers());
         System.out.println(str);
         file.writeString(str, false);
     }
