@@ -4,7 +4,6 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputMultiplexer;
-import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g3d.*;
@@ -18,9 +17,10 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.math.collision.Ray;
 import com.badlogic.gdx.utils.*;
+import com.monstrous.trackbuilder.terrain.SimpleTerrain;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
-public class Main extends ApplicationAdapter {
+public class TrackBuilder extends ApplicationAdapter {
     private SpriteBatch batch;
     private Texture image;
     private Texture roadTexture;
@@ -43,11 +43,21 @@ public class Main extends ApplicationAdapter {
     private ModelInstance centreLineModelInstance;
     private ModelInstance xyzInstance;
     private boolean wireFrameMode = false;
+    public SimpleTerrain terrain;
+    public boolean showTerrain = true;
+    private GUI gui;
+    public boolean showGrid = true;
 
 
     @Override
     public void create() {
         disposables = new Array<>();
+
+
+
+        terrain = new SimpleTerrain(Gdx.files.internal("terrain/noiseTexture.png"),  35f, 8f);
+
+        gui = new GUI(this, terrain);
 
         batch = new SpriteBatch();
         image = new Texture("libgdx.png");
@@ -63,10 +73,10 @@ public class Main extends ApplicationAdapter {
         environment.add(new DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f));
 
         editCam = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        editCam.position.set(10f, 10f, 10f);
+        editCam.position.set(0, 56, 26);
         editCam.lookAt(0, 0, 0);
         editCam.near = 0.1f;
-        editCam.far = 150f;
+        editCam.far = 15000f;
         editCam.update();
 
         driveCam = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -95,12 +105,17 @@ public class Main extends ApplicationAdapter {
 
 
         inputController = new CameraInputController(editCam);
+
+        inputController.scrollFactor = -5f;
         // disable WASD controls, because we want to use these keys for something else
         inputController.forwardKey = Input.Keys.BUTTON_A;
         inputController.backwardKey = Input.Keys.BUTTON_A;
         inputController.rotateLeftKey = Input.Keys.BUTTON_A;
         inputController.rotateRightKey = Input.Keys.BUTTON_A;
-        Gdx.input.setInputProcessor(new InputMultiplexer( inputController));
+        InputMultiplexer im = new InputMultiplexer();
+        im.addProcessor(gui.stage);
+        im.addProcessor(inputController);
+        Gdx.input.setInputProcessor(im);
 
         controlPoints.initMarkers();
         buildRoad(controlPoints);
@@ -163,9 +178,7 @@ public class Main extends ApplicationAdapter {
         centreLineModelInstance =  new ModelInstance(centreLineModel);
     }
 
-
-    @Override
-    public void render() {
+    private void processInputs() {
         if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_1))
             driveMode = false;
         if(Gdx.input.isKeyJustPressed(Input.Keys.NUM_2))
@@ -201,12 +214,28 @@ public class Main extends ApplicationAdapter {
         inputController.update();
         placeDriveCamera(driveCam, time);
 
+    }
+
+
+    @Override
+    public void render() {
+        processInputs();
+
         if(!driveMode)
             controlPoints.highlightMarker(editCam, Gdx.input.getX(), Gdx.input.getY());
 
-        ScreenUtils.clear(Color.TEAL, true);
-
         Camera cam = driveMode ? driveCam : editCam;
+
+        if(showTerrain)
+            terrain.update(cam);
+
+        // clear screen
+        ScreenUtils.clear(Color.SKY, true);
+
+        if(showTerrain)
+            terrain.render(cam, environment);
+
+
 
         modelBatch.begin(cam);
         modelBatch.render(instances, environment);
@@ -214,9 +243,8 @@ public class Main extends ApplicationAdapter {
         modelBatch.render(centreLineModelInstance, environment);
         if(!driveMode) {
             controlPoints.render(modelBatch, environment);
-            modelBatch.render(debugInstances, environment);
-//            modelBatch.render(xyzMarkers, environment);
-//            modelBatch.render(controlPoints.getMarkers(), environment);
+            if(showGrid)
+                modelBatch.render(debugInstances, environment);
         }
         modelBatch.end();
 
@@ -227,11 +255,24 @@ public class Main extends ApplicationAdapter {
         batch.begin();
         batch.draw(image, 40, 21);
         batch.end();
+
+        gui.render(Gdx.graphics.getDeltaTime());
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        editCam.viewportWidth = Gdx.graphics.getWidth();
+        editCam.viewportHeight = Gdx.graphics.getHeight();
+        editCam.update();
+
+        batch.getProjectionMatrix().setToOrtho2D(0,0,width, height);
+
+        gui.resize(width, height);
     }
 
     private void placeDriveCamera( PerspectiveCamera driveCam, float t){
         controlPoints.getPositionSpline().valueAt(driveCam.position, t);
-        driveCam.position.y += 0.3f;
+        driveCam.position.y += 0.6f;
         driveCam.up.set(Vector3.Y);
         //controlPoints.getNormalSpline().valueAt(driveCam.up, t);
         controlPoints.getPositionSpline().derivativeAt(driveCam.direction, t);
@@ -425,5 +466,7 @@ public class Main extends ApplicationAdapter {
         roadModel.dispose();
         centreLineModel.dispose();
         controlPoints.dispose();
+        terrain.dispose();
+        gui.dispose();
     }
 }

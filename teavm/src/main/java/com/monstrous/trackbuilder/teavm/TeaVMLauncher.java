@@ -2,7 +2,7 @@ package com.monstrous.trackbuilder.teavm;
 
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplicationConfiguration;
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplication;
-import com.monstrous.trackbuilder.Main;
+import com.monstrous.trackbuilder.TrackBuilder;
 
 /**
  * Launches the TeaVM/HTML application.
@@ -16,6 +16,6 @@ public class TeaVMLauncher {
         //// If width and height are both 0, then the app will use all available space.
         config.width = 0;
         config.height = 0;
-        new WebApplication(new Main(), config);
+        new WebApplication(new TrackBuilder(), config);
     }
 }
