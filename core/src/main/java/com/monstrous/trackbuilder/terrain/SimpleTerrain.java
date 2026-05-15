@@ -221,9 +221,6 @@ public class SimpleTerrain implements Disposable {
         terrainBatch.end();
     }
 
-    public Texture getHeightMapTexture(){
-        return heightMap.getHeightMapTexture();
-    }
 
     private void buildTerrain(){
         elements.clear();

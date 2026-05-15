@@ -60,7 +60,7 @@ public class TrackBuilder extends ApplicationAdapter {
 
 
 
-        terrain = new SimpleTerrain(Gdx.files.internal("terrain/noiseTexture.png"),  35f, 8f);
+        terrain = new SimpleTerrain(Gdx.files.local("heightmap.bin"),  35f, 8f);
 
         gui = new GUI(this, terrain);
 

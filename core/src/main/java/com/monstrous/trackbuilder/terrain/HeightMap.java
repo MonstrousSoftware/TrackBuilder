@@ -1,54 +1,51 @@
 package com.monstrous.trackbuilder.terrain;
 
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.Disposable;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
+import java.util.Arrays;
 
 
 public class HeightMap implements Disposable {
 
-    public int mapSize;
-    private Texture heightMapTexture;
-    public Pixmap pixmap;
-    private byte[] heightData;
-    private float[] heightFloats;
+    public final int mapSize = 128;
+    private final FileHandle fileHandle;
+    private final float[] heightFloats;
 
 
     /** Create height map from grey scale texture file (should be 8 bits greyscale) */
-    public HeightMap(FileHandle textureFile) {
-        pixmap = new Pixmap(textureFile);
+    public HeightMap(FileHandle fileHandle) {
+        this.fileHandle = fileHandle;
 
-        // read heights into an array
-        ByteBuffer bytes = pixmap.getPixels();
-        int numBytes = bytes.limit();
-        heightData = new byte[numBytes];
-        bytes.get(heightData);
-        bytes.rewind();
 
         // convert bytes values (0 to 255) to floats (0.0f to 1.0f)
-        heightFloats = new float[numBytes];
-        for(int i = 0; i < numBytes; i++) {
-            int hi = heightData[i] & 0xFF;    // interpret as unsigned byte
-            heightFloats[i] = hi/255f;
-        }
-
-        heightData = null;
-
-        heightMapTexture = new Texture(pixmap, true);
-
-        heightMapTexture.setWrap(Texture.TextureWrap.ClampToEdge, Texture.TextureWrap.ClampToEdge);
-        heightMapTexture.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
-        mapSize = heightMapTexture.getWidth();  // assumes a square
+        heightFloats = new float[mapSize * mapSize];
+        load(fileHandle);
     }
 
-    public Texture getHeightMapTexture(){
-        return heightMapTexture;
+
+    public void load(FileHandle file){
+        byte[] bytes = file.readBytes();
+        ByteBuffer bb = ByteBuffer.wrap(bytes);
+        FloatBuffer fb = bb.asFloatBuffer();
+        for(int i = 0; i < fb.limit(); i++)
+            heightFloats[i] = fb.get();
     }
 
+    public void save(FileHandle file){
+        ByteBuffer bb = ByteBuffer.allocate(heightFloats.length*Float.BYTES);
+        for(int i = 0; i < heightFloats.length; i++)
+            bb.putFloat(heightFloats[i]);
+        file.writeBytes(bb.array(), false);
+    }
 
     public int getSize(){
         return mapSize;
@@ -61,9 +58,7 @@ public class HeightMap implements Disposable {
         int z = Math.round(v * mapSize);
         x = Math.min(x, mapSize-1); // clamp to prevent overflow
         z = Math.min(z, mapSize-1);
-        return heightFloats[4*(z*mapSize+x)];
-//        int hi = heightData[4*(z*mapSize+x)] & 0xFF;    // interpret as unsigned byte
-//        return hi/255f;
+        return heightFloats[z*mapSize+x];
     }
 
     public void set(float u, float v, float h){
@@ -72,7 +67,7 @@ public class HeightMap implements Disposable {
         x = Math.min(x, mapSize-1); // clamp to prevent overflow
         z = Math.min(z, mapSize-1);
 
-        heightFloats[4*(z*mapSize+x)]  = h;
+        heightFloats[z*mapSize+x]  = h;
     }
 
     public void changeHeight(float u, float v, float radius, float delta){
@@ -92,10 +87,9 @@ public class HeightMap implements Disposable {
                 float dist = (float)Math.sqrt((x-cx)*(x-cx)+(z-cz)*(z-cz));
                 if(dist<=r) {
                     dist /= (float)r;
-                    int index = 4 * (z * mapSize + x);
+                    int index = z * mapSize + x;
                     float h = heightFloats[index];
                     h += delta * (1f-dist);
-                    //h = Math.min(1f, Math.max(0f, h));  // clamp
                     heightFloats[index] = h;
                 }
             }
@@ -105,8 +99,7 @@ public class HeightMap implements Disposable {
 
     @Override
     public void dispose() {
-        if(heightMapTexture != null)
-            heightMapTexture.dispose();
+        save(fileHandle);
     }
 
 }
