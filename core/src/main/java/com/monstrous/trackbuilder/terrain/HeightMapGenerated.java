@@ -52,6 +52,15 @@ public class HeightMapGenerated implements HeightMap, Disposable {
         return heightMap[z][x];
     }
 
+    public void set(float u, float v, float h){
+//        int x = Math.round(u * mapSize);
+//        int z = Math.round(v * mapSize);
+//        x = Math.min(x, mapSize-1); // clamp to prevent overflow
+//        z = Math.min(z, mapSize-1);
+//
+//        heightData[4*(z*mapSize+x)]  = (byte)(h * 255f);
+    }
+
     @Override
     public void dispose() {
         if(heightMapTexture != null)

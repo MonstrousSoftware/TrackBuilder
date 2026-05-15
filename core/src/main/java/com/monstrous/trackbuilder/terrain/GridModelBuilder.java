@@ -12,14 +12,8 @@ import com.badlogic.gdx.math.Vector3;
 public class GridModelBuilder {
 
 
-    /** Make a Model consisting of a square 2D grid of NxN vertices */
-    public Model makeGridModel( int N, float horizontalScale, HeightMap heightMap, float amplitude, int primitive, Material material) {
-        return makeGridModel( N, N, heightMap, amplitude, primitive, material);
-    }
-
     /** Make a Model consisting of a rectangular grid of size NxM vertices */
-   public Model makeGridModel(int N, int M, float horizontalScale, HeightMap heightMap, float amplitude, int primitive, Material material) {
-
+   public static Model makeGridModel(int N, int M, float horizontalScale, HeightMap heightMap, float amplitude, int primitive, Material material) {
 
         int attr = VertexAttributes.Usage.Position | VertexAttributes.Usage.TextureCoordinates;
         if(primitive == GL20.GL_LINES)
@@ -34,7 +28,6 @@ public class GridModelBuilder {
 
         meshBuilder.ensureVertices(numVerts);
         meshBuilder.ensureTriangleIndices(numTris);
-
 
         Vector3 pos = new Vector3();
         float height;
@@ -52,30 +45,28 @@ public class GridModelBuilder {
                 short v0 = (short) ((z - 1) * N);    // vertex number at top left of this row
                 for (short t = 0; t < N-1; t++) {
                     // counter-clockwise winding
-                    addTriangle(meshBuilder, vertices,  v0, (short) (v0 + N), (short) (v0 + 1));
-                    addTriangle(meshBuilder, vertices,  (short) (v0 + 1), (short) (v0 + N), (short) (v0 + N + 1));
+                    meshBuilder.triangle(  v0, (short) (v0 + N), (short) (v0 + 1));
+                    meshBuilder.triangle(  (short) (v0 + 1), (short) (v0 + N), (short) (v0 + N + 1));
                     v0++;                // next column
                 }
             }
         }
 
+        float uvScale = 0.1f;
 
         // and pass vertex to meshBuilder
         MeshPartBuilder.VertexInfo vert = new MeshPartBuilder.VertexInfo();
         vert.hasColor = false;
         vert.hasNormal = false;
         vert.hasPosition = true;
-        vert.hasUV = false;
+        vert.hasUV = true;
 
         for (int i = 0; i < numVerts; i++) {
             vert.position.set(vertices[i]);
+            vert.uv.set(vert.position.x*uvScale, vert.position.z*uvScale);
             meshBuilder.vertex(vert);
         }
 
         return modelBuilder.end();
-    }
-
-    private void addTriangle(MeshBuilder meshBuilder, final Vector3[] vertices, short v0, short v1, short v2) {
-        meshBuilder.triangle(v0, v1, v2);
     }
 }

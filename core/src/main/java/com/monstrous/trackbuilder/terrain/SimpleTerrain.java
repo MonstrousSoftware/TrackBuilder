@@ -43,9 +43,6 @@ public class SimpleTerrain implements Disposable {
      * @param tileSize size of a single tile in world units
      */
     public SimpleTerrain(FileHandle fileHandle, float amplitude, float tileSize) {
-
-        //this.gridSize = gridSize;
-        //this.scale = tileSize;    // hmm...
         this.tileSize = tileSize;   // world size per height map texel, i.e. per grid cell
         this.amplitude = amplitude;
         this.wireFrameMode = false;
@@ -55,14 +52,14 @@ public class SimpleTerrain implements Disposable {
 
         generateBlock(heightMap);
         buildTerrain();
+        if(!wireFrameMode)
+            getCollisionDetectionTriangles();
         terrainBatch = new ModelBatch();
     }
 
     public void setWireFrameMode(boolean mode){
         this.wireFrameMode = mode;
     }
-
-
 
     public float getHeight(float worldX, float worldZ){
         float worldSize = heightMap.getSize() * tileSize;
@@ -72,6 +69,30 @@ public class SimpleTerrain implements Disposable {
         if(u < 0 || u > 1f || v < 0 || v > 1f)
             return 0;
         return amplitude * heightMap.get(u, v);
+    }
+
+    public void changeHeight(float x, float z, float radius, float delta){
+        float worldSize = heightMap.getSize() * tileSize;
+        // scale [-0.5*worldSize .. 0.5*worldSize] to [0 .. 1]
+        float u = (x / worldSize) + 0.5f;
+        float v = (z / worldSize) + 0.5f;
+        if(u < 0 || u > 1f || v < 0 || v > 1f)
+            return;
+        float h = getHeight(x,z)/amplitude;
+        h += delta;
+        h = Math.max(0f, Math.min(1, h));
+        heightMap.set(u, v, h);
+
+        boolean w = wireFrameMode;
+        wireFrameMode = false;
+        generateBlock(heightMap);   // generate in triangle mode for the sake of col det triangles
+        getCollisionDetectionTriangles();
+        if(w) {
+            wireFrameMode = w;
+            generateBlock(heightMap);
+        }
+        buildTerrain();
+
     }
 
     /** set terrain amplitude, i.e. height multiplication factor */
@@ -101,7 +122,6 @@ public class SimpleTerrain implements Disposable {
 
     public void setScale(float scale) {
         this.tileSize = scale;
-        //terrainShader.setScale(scale);
     }
 
     public float getScale() {
@@ -116,41 +136,37 @@ public class SimpleTerrain implements Disposable {
     public void generateBlock(HeightMap heightMap){
         instances.clear();
         disposeBlocks();
-        GridModelBuilder gridBuilder = new GridModelBuilder();
         final int M = gridSize;
         final int primitive = wireFrameMode ? GL20.GL_LINES : GL20.GL_TRIANGLES;
 
 
         Texture diffuseTexture  = new Texture(Gdx.files.internal("textures/sand.png"), true);
-        diffuseTexture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+        diffuseTexture.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.MipMapLinearNearest);
         diffuseTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
 
         Material mat = new Material(
                 ColorAttribute.createDiffuse(Color.WHITE)
-                //TextureAttribute.createDiffuse(diffuseTexture)
              );
 
         if(!wireFrameMode)
             mat.set(TextureAttribute.createDiffuse(diffuseTexture));
 
         // vertex positions range is [0..M][0..M]
-        squareMxM = gridBuilder.makeGridModel( M, M, tileSize, heightMap, amplitude, primitive, mat);
-        getCollisionDetectionTriangles();
+        squareMxM = GridModelBuilder.makeGridModel( M, M, tileSize, heightMap, amplitude, primitive, mat);
+
     }
 
 
     private void getCollisionDetectionTriangles(){
         int nv = squareMxM.meshes.first().getNumVertices();
         int stride = squareMxM.meshes.first().getVertexSize();  // in bytes
-        vertexSize = stride/4;  // in floats
+        vertexSize = stride/Float.BYTES;  // from bytes to floats
         vertexData = new float[vertexSize * nv ];
         squareMxM.meshes.first().getVertices(vertexData);
         int ni = squareMxM.meshes.first().getNumIndices();
         indexData = new short[ni];
         squareMxM.meshes.first().getIndices(indexData);
     }
-
-    // todo the terrain height is filled in by the shader, so the triangles have incorrect Y value.
 
     public boolean intersect(Ray ray, Vector3 intersection ) {
         ray.origin.sub(position);  // make ray relative to terrain space

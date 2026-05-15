@@ -44,10 +44,14 @@ public class TrackBuilder extends ApplicationAdapter {
     private ModelInstance xyzInstance;
     private boolean wireFrameMode = false;
     public SimpleTerrain terrain;
-    public boolean showTerrain = true;
-    public boolean showTrack = false;
     private GUI gui;
+    public boolean showTerrain = true;
+    public boolean showTrack = true;
+
     public boolean showGrid = true;
+    public boolean terrainEditMode = false;
+    public float terrainEditRadius = 50f;
+    public Vector3 terrainCursor = new Vector3();
 
 
     @Override
@@ -198,6 +202,10 @@ public class TrackBuilder extends ApplicationAdapter {
             wireFrameMode = !wireFrameMode;
             buildRoad(controlPoints);
         }
+        if(Gdx.input.isKeyJustPressed(Input.Keys.T)) {
+            terrainEditMode = !terrainEditMode;
+            showTrack = !terrainEditMode;
+        }
         if(Gdx.input.isKeyJustPressed(Input.Keys.S)) {
             SaveLoad.saveTrack(Gdx.files.local("saved-track.txt"), controlPoints);
         }
@@ -205,6 +213,15 @@ public class TrackBuilder extends ApplicationAdapter {
             SaveLoad.loadTrack(Gdx.files.local("saved-track.txt"), controlPoints);
             buildRoad(controlPoints);
         }
+        if(terrainEditMode) {
+            if (Gdx.input.isKeyPressed(Input.Keys.EQUALS) && terrainEditRadius < 100)    // plus
+                terrainEditRadius++;
+            if (Gdx.input.isKeyPressed(Input.Keys.MINUS) && terrainEditRadius > 1)
+                terrainEditRadius--;
+
+            processTerrainEditInputs();
+        }
+
 
         moveSelectedMarker();
 
@@ -254,6 +271,11 @@ public class TrackBuilder extends ApplicationAdapter {
         if(showTrack && !driveMode)
             renderSpline(cam);
 
+        if(terrainEditMode) {
+            moveTerrainCursor(cam);
+            renderTerrainCursor(cam);
+        }
+
 
         batch.begin();
         batch.draw(image, 40, 21);
@@ -284,23 +306,6 @@ public class TrackBuilder extends ApplicationAdapter {
 
 
     private void buildSplineFromMarkers(Markers markers) {
-//        Array<Marker> markerArray = markers.getMarkers();
-//        //Vector3[] controlPoints = new Vector3[markerArray.size];
-//        Vector3[] normalControlPoints = new Vector3[markerArray.size];
-//
-//        int index = 0;
-//        for(Marker marker : markerArray){
-//            //controlPoints[index] = marker.position;
-////
-////            Vector3 normalVector = new Vector3(Vector3.Y);
-////            normalVector.rot(marker.transform);
-//            normalControlPoints[index] = marker.normal;
-//
-//            index++;
-//        }
-//        //positionSpline = new CatmullRomSpline<Vector3>(controlPoints, true);
-//        normalSpline = new CatmullRomSpline<Vector3>(normalControlPoints, true);
-
         // fill array of points for debug render
         for(int i = 0; i < 100; i++) {
             Vector3 out = new Vector3();
@@ -325,6 +330,36 @@ public class TrackBuilder extends ApplicationAdapter {
         shapeRenderer.line(pathPoints[99], pathPoints[0]);
         shapeRenderer.end();
     }
+
+    // *****************************************************
+    // Terrain Editing
+    //
+
+    private void moveTerrainCursor(Camera cam) {
+        Ray ray = cam.getPickRay(Gdx.input.getX(), Gdx.input.getY());
+        terrain.intersect(ray, terrainCursor);
+    }
+
+    private void renderTerrainCursor(Camera cam) {
+        shapeRenderer.setProjectionMatrix(cam.combined);
+        shapeRenderer.identity();
+        shapeRenderer.translate(terrainCursor.x,terrainCursor.y,terrainCursor.z);
+        shapeRenderer.rotate(1,0,0,90);
+
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        shapeRenderer.setColor(1,0,0,1);
+        shapeRenderer.circle(0,0, terrainEditRadius, 200);
+        shapeRenderer.end();
+    }
+
+    private void processTerrainEditInputs(){
+        if(Gdx.input.isKeyPressed(Input.Keys.PAGE_UP))
+            terrain.changeHeight(terrainCursor.x,terrainCursor.z, terrainEditRadius, 0.01f);
+        if(Gdx.input.isKeyPressed(Input.Keys.PAGE_DOWN))
+            terrain.changeHeight(terrainCursor.x,terrainCursor.z, terrainEditRadius,-0.01f);
+    }
+
+
 
 
     private Model buildRoadModelFromSpline(CatmullRomSpline<Vector3> spline, CatmullRomSpline<Vector3> normalSpline){

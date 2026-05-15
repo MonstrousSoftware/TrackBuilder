@@ -38,6 +38,8 @@ public class GUI {
     private float clipMapScale;
     private Label levelsLabel;
     private Label clipMapScaleLabel;
+    private Slider radiusSlider;
+    private Label radiusLabel;
 
 
     public GUI(TrackBuilder main, SimpleTerrain terrain ) {
@@ -183,6 +185,24 @@ public class GUI {
             }
         });
         controls.add(trackCheckbox).left().row();
+
+
+        // edit radius
+        radiusSlider = new Slider(1f, 100f, 1f, false, skin);
+        radiusSlider.setAnimateDuration(0.1f);
+        radiusSlider.setValue(main.terrainEditRadius);
+        radiusSlider.setSize(150, 20);
+        controls.add(new Label("edit radius", skin));
+        controls.add(radiusSlider);
+        radiusLabel = new Label(String.valueOf((int) main.terrainEditRadius), skin);
+        controls.add(radiusLabel).row();
+        radiusSlider.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                main.terrainEditRadius = (radiusSlider.getValue());
+                radiusLabel.setText(String.valueOf((int)  main.terrainEditRadius));
+            }
+        });
 
 //
 //        // scale
@@ -375,7 +395,10 @@ public class GUI {
     }
 
 
-
+    private void updateControls(){
+        radiusLabel.setText(String.valueOf((int)  main.terrainEditRadius));
+        radiusSlider.setValue(main.terrainEditRadius);
+    }
 
 
 
@@ -385,6 +408,8 @@ public class GUI {
     }
 
     public void render( float delta ) {
+        updateControls();
+
         //fpsLabel.setText(Gdx.graphics.getFramesPerSecond());
        //instancesLabel.setText(terrain.getNumInstances());
         stage.act(delta);

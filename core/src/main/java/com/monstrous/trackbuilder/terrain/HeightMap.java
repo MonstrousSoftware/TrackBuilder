@@ -11,6 +11,8 @@ public interface HeightMap extends Disposable {
     /** get height at position (wx, wz). Coordinates must be in range [0.0 to 1.0]. */
     public float get(float wx, float wz);
 
+    public void set(float u, float v, float h);
+
     public int getSize();
 
 }

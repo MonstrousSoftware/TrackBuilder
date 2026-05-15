@@ -13,7 +13,7 @@ public class HeightMapFromFile implements HeightMap, Disposable {
 
     public int mapSize;
     private Texture heightMapTexture;
-    private Pixmap pixmap;
+    public Pixmap pixmap;
     private byte[] heightData;
 
 
@@ -54,6 +54,15 @@ public class HeightMapFromFile implements HeightMap, Disposable {
 
         int hi = heightData[4*(z*mapSize+x)] & 0xFF;    // interpret as unsigned byte
         return hi/255f;
+    }
+
+    public void set(float u, float v, float h){
+        int x = Math.round(u * mapSize);
+        int z = Math.round(v * mapSize);
+        x = Math.min(x, mapSize-1); // clamp to prevent overflow
+        z = Math.min(z, mapSize-1);
+
+        heightData[4*(z*mapSize+x)]  = (byte)(h * 255f);
     }
 
     @Override
