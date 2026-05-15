@@ -9,7 +9,6 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g3d.*;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
-import com.badlogic.gdx.graphics.g3d.utils.DefaultShaderProvider;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
@@ -47,7 +46,7 @@ public class SimpleTerrain implements Disposable {
         this.amplitude = amplitude;
         this.wireFrameMode = false;
 
-        heightMap = new HeightMapFromFile(fileHandle);
+        heightMap = new HeightMap(fileHandle);
         this.gridSize = heightMap.getSize();    // get grid size from texture size, assumed to be square
 
         generateBlock(heightMap);
@@ -78,11 +77,14 @@ public class SimpleTerrain implements Disposable {
         float v = (z / worldSize) + 0.5f;
         if(u < 0 || u > 1f || v < 0 || v > 1f)
             return;
-        float h = getHeight(x,z)/amplitude;
-        h += delta;
-        h = Math.max(0f, Math.min(1, h));
-        heightMap.set(u, v, h);
+//        float h = getHeight(x,z)/amplitude;
+//        h += delta;
+//        h = Math.max(0f, Math.min(1, h));
+        //heightMap.set(u, v, h);
 
+        heightMap.changeHeight(u,v, radius/worldSize, delta);
+
+        // rebuild mesh
         boolean w = wireFrameMode;
         wireFrameMode = false;
         generateBlock(heightMap);   // generate in triangle mode for the sake of col det triangles

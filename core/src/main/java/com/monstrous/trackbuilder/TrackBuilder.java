@@ -214,7 +214,7 @@ public class TrackBuilder extends ApplicationAdapter {
             buildRoad(controlPoints);
         }
         if(terrainEditMode) {
-            if (Gdx.input.isKeyPressed(Input.Keys.EQUALS) && terrainEditRadius < 100)    // plus
+            if (Gdx.input.isKeyPressed(Input.Keys.EQUALS) && terrainEditRadius < 300)    // plus
                 terrainEditRadius++;
             if (Gdx.input.isKeyPressed(Input.Keys.MINUS) && terrainEditRadius > 1)
                 terrainEditRadius--;

@@ -188,7 +188,7 @@ public class GUI {
 
 
         // edit radius
-        radiusSlider = new Slider(1f, 100f, 1f, false, skin);
+        radiusSlider = new Slider(1f, 300f, 1f, false, skin);
         radiusSlider.setAnimateDuration(0.1f);
         radiusSlider.setValue(main.terrainEditRadius);
         radiusSlider.setSize(150, 20);
