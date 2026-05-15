@@ -45,6 +45,7 @@ public class TrackBuilder extends ApplicationAdapter {
     private boolean wireFrameMode = false;
     public SimpleTerrain terrain;
     public boolean showTerrain = true;
+    public boolean showTrack = false;
     private GUI gui;
     public boolean showGrid = true;
 
@@ -221,34 +222,36 @@ public class TrackBuilder extends ApplicationAdapter {
     public void render() {
         processInputs();
 
-        if(!driveMode)
+        if (!driveMode)
             controlPoints.highlightMarker(editCam, Gdx.input.getX(), Gdx.input.getY());
 
         Camera cam = driveMode ? driveCam : editCam;
 
-        if(showTerrain)
+        if (showTerrain)
             terrain.update(cam);
 
         // clear screen
         ScreenUtils.clear(Color.SKY, true);
 
-        if(showTerrain)
+        if (showTerrain)
             terrain.render(cam, environment);
-
 
 
         modelBatch.begin(cam);
         modelBatch.render(instances, environment);
-        modelBatch.render(roadModelInstance, environment);
-        modelBatch.render(centreLineModelInstance, environment);
-        if(!driveMode) {
-            controlPoints.render(modelBatch, environment);
-            if(showGrid)
-                modelBatch.render(debugInstances, environment);
+        if (showTrack) {
+            modelBatch.render(roadModelInstance, environment);
+            modelBatch.render(centreLineModelInstance, environment);
+
+            if (!driveMode) {
+                controlPoints.render(modelBatch, environment);
+                if (showGrid)
+                    modelBatch.render(debugInstances, environment);
+            }
         }
         modelBatch.end();
 
-        if(!driveMode)
+        if(showTrack && !driveMode)
             renderSpline(cam);
 
 

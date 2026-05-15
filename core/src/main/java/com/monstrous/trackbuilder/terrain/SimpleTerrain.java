@@ -3,9 +3,11 @@ package com.monstrous.trackbuilder.terrain;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Camera;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g3d.*;
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.utils.DefaultShaderProvider;
 import com.badlogic.gdx.math.Intersector;
@@ -27,7 +29,6 @@ public class SimpleTerrain implements Disposable {
     private Model squareMxM;
     private final Vector3 focus = new Vector3();
     public boolean frustumCulling = false;
-    private final TerrainShader terrainShader;
     private float amplitude;
     //private float scale;        // world scale of one height map tile (not clip map tile)
     private float[] vertexData;
@@ -54,20 +55,7 @@ public class SimpleTerrain implements Disposable {
 
         generateBlock(heightMap);
         buildTerrain();
-
-        // to create a shader we need a renderable
-        // use the renderable from the first terrain element
-        Renderable renderable = new Renderable();
-        elements.get(0).modelInstance.getRenderable(renderable);
-        renderable.environment = new Environment();     // force lighting so that fog will work
-
-        terrainShader = new TerrainShader(renderable, heightMap.getSize(), tileSize, amplitude);
-        terrainBatch = new ModelBatch(new DefaultShaderProvider() {
-            @Override
-            protected Shader createShader(final Renderable renderable) {
-                return terrainShader;
-            }
-        });
+        terrainBatch = new ModelBatch();
     }
 
     public void setWireFrameMode(boolean mode){
@@ -89,7 +77,7 @@ public class SimpleTerrain implements Disposable {
     /** set terrain amplitude, i.e. height multiplication factor */
     public void setAmplitude(float amplitude){
         this.amplitude = amplitude;
-        terrainShader.setAmplitude(amplitude);
+        //terrainShader.setAmplitude(amplitude);
         generateBlock(heightMap);
     }
 
@@ -113,7 +101,7 @@ public class SimpleTerrain implements Disposable {
 
     public void setScale(float scale) {
         this.tileSize = scale;
-        terrainShader.setScale(scale);
+        //terrainShader.setScale(scale);
     }
 
     public float getScale() {
@@ -138,9 +126,12 @@ public class SimpleTerrain implements Disposable {
         diffuseTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
 
         Material mat = new Material(
-            TextureAttribute.createDiffuse(diffuseTexture),
-            TextureAttribute.createEmissive(heightMap.getHeightMapTexture())    // misuse "emissive texture" for height map
-        );
+                ColorAttribute.createDiffuse(Color.WHITE)
+                //TextureAttribute.createDiffuse(diffuseTexture)
+             );
+
+        if(!wireFrameMode)
+            mat.set(TextureAttribute.createDiffuse(diffuseTexture));
 
         // vertex positions range is [0..M][0..M]
         squareMxM = gridBuilder.makeGridModel( M, M, tileSize, heightMap, amplitude, primitive, mat);

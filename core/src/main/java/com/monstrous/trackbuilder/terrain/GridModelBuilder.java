@@ -1,5 +1,6 @@
 package com.monstrous.trackbuilder.terrain;
 
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
@@ -19,7 +20,10 @@ public class GridModelBuilder {
     /** Make a Model consisting of a rectangular grid of size NxM vertices */
    public Model makeGridModel(int N, int M, float horizontalScale, HeightMap heightMap, float amplitude, int primitive, Material material) {
 
+
         int attr = VertexAttributes.Usage.Position | VertexAttributes.Usage.TextureCoordinates;
+        if(primitive == GL20.GL_LINES)
+            attr = VertexAttributes.Usage.Position | VertexAttributes.Usage.ColorPacked;
 
         ModelBuilder modelBuilder = new ModelBuilder();
         modelBuilder.begin();

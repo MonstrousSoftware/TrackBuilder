@@ -23,6 +23,7 @@ public class GUI {
     public boolean showWireFrame = false;
     public boolean culling = true;
 
+
     public int gridsize = 16;
     private Label fpsLabel;
     private Label instancesLabel;
@@ -93,15 +94,7 @@ public class GUI {
         });
         controls.add(terrainCheckbox).left().row();
 
-        final CheckBox gridCheckbox = new CheckBox("show grid", skin);
-        gridCheckbox.setChecked(main.showGrid);
-        gridCheckbox.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
-                main.showGrid = gridCheckbox.isChecked();
-            }
-        });
-        controls.add(gridCheckbox).left().row();
+
 
 
         final CheckBox linesCheckbox = new CheckBox("terrain wire frame", skin);
@@ -171,6 +164,25 @@ public class GUI {
             }
         });
 
+        final CheckBox gridCheckbox = new CheckBox("show grid", skin);
+        gridCheckbox.setChecked(main.showGrid);
+        gridCheckbox.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                main.showGrid = gridCheckbox.isChecked();
+            }
+        });
+        controls.add(gridCheckbox).left().row();
+
+        final CheckBox trackCheckbox = new CheckBox("show track", skin);
+        trackCheckbox.setChecked(main.showTrack);
+        trackCheckbox.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                main.showTrack = trackCheckbox.isChecked();
+            }
+        });
+        controls.add(trackCheckbox).left().row();
 
 //
 //        // scale
