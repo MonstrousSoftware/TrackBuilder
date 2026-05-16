@@ -28,7 +28,7 @@ public class HeightMap implements Disposable {
 
         // convert bytes values (0 to 255) to floats (0.0f to 1.0f)
         heightFloats = new float[mapSize * mapSize];
-        //load(fileHandle);
+        load(fileHandle);
     }
 
 
