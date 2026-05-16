@@ -50,7 +50,7 @@ public class TrackBuilder extends ApplicationAdapter {
 
     public boolean showGrid = true;
     public boolean terrainEditMode = false;
-    public float terrainEditRadius = 50f;
+    public float terrainEditRadius = 7f;
     public Vector3 terrainCursor = new Vector3();
     public float terrainDelta = 0;
 

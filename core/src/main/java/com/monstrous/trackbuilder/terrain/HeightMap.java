@@ -28,7 +28,7 @@ public class HeightMap implements Disposable {
 
         // convert bytes values (0 to 255) to floats (0.0f to 1.0f)
         heightFloats = new float[mapSize * mapSize];
-        load(fileHandle);
+        //load(fileHandle);
     }
 
 
@@ -76,6 +76,8 @@ public class HeightMap implements Disposable {
         cx = Math.min(cx, mapSize-1); // clamp to prevent overflow
         cz = Math.min(cz, mapSize-1);
         int r = (int)(radius * mapSize);
+        if(r == 0) // prevent divide by zero
+            return;
 
         int minx = Math.max(0, cx - r);
         int maxx = Math.min(cx + r, mapSize-1);
