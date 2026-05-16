@@ -19,8 +19,14 @@ SHIFT + Arrow keys to rotate the selected (yellow) marker.
 W to toggle wire frame mode
 S to save track
 L to load track
+T for terrain editor
+Terrain edit mode:
+    Minus/Plus(equals) to resize terrain cursor
+    PgUp/PgDown to raise/lower terrain
 
-
+To do:
+- terrain normals
+- UI changes
 
 ## Platforms
 

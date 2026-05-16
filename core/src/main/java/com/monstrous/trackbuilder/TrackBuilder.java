@@ -52,6 +52,7 @@ public class TrackBuilder extends ApplicationAdapter {
     public boolean terrainEditMode = false;
     public float terrainEditRadius = 50f;
     public Vector3 terrainCursor = new Vector3();
+    public float terrainDelta = 0;
 
 
     @Override
@@ -354,9 +355,17 @@ public class TrackBuilder extends ApplicationAdapter {
 
     private void processTerrainEditInputs(){
         if(Gdx.input.isKeyPressed(Input.Keys.PAGE_UP))
-            terrain.changeHeight(terrainCursor.x,terrainCursor.z, terrainEditRadius, 0.01f);
+            terrainDelta = 0.1f;
+            //terrain.changeHeight(terrainCursor.x,terrainCursor.z, terrainEditRadius, 0.1f);
         if(Gdx.input.isKeyPressed(Input.Keys.PAGE_DOWN))
-            terrain.changeHeight(terrainCursor.x,terrainCursor.z, terrainEditRadius,-0.01f);
+            terrainDelta = -0.1f;
+            //terrain.changeHeight(terrainCursor.x,terrainCursor.z, terrainEditRadius,-0.1f);
+
+
+
+        if(Gdx.input.isButtonPressed(Input.Buttons.LEFT)){
+            terrain.changeHeight(terrainCursor.x,terrainCursor.z, terrainEditRadius, terrainDelta);
+        }
     }
 
 

@@ -89,12 +89,18 @@ public class HeightMap implements Disposable {
                     dist /= (float)r;
                     int index = z * mapSize + x;
                     float h = heightFloats[index];
-                    h += delta * (1f-dist);
+                    h += delta * bump(dist);
                     heightFloats[index] = h;
                 }
             }
         }
+    }
 
+    /** bump function, smoothly going from height 1 at distance 0 to height 0 at distance 1 */
+    private float bump(float distance){
+        if(distance >= 1f)
+            return 0;
+        return (float) Math.exp(1/(distance*distance - 1));
     }
 
     @Override

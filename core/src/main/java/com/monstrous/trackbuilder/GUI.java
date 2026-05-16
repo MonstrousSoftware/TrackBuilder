@@ -5,6 +5,7 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.monstrous.trackbuilder.terrain.SimpleTerrain;
 
@@ -203,6 +204,29 @@ public class GUI {
                 radiusLabel.setText(String.valueOf((int)  main.terrainEditRadius));
             }
         });
+
+        CheckBox buttonUp = new CheckBox("up", skin);
+        buttonUp.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                main.terrainDelta = 0.1f;
+            }
+        });
+        controls.add(buttonUp).width(100).row();
+
+        CheckBox buttonDown = new CheckBox("down", skin);
+        buttonDown.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                main.terrainDelta = -0.1f;
+            }
+        });
+        controls.add(buttonDown).width(100).row();
+
+        ButtonGroup<CheckBox> buttonGroup = new ButtonGroup<>(buttonUp, buttonDown);
+        buttonGroup.setMinCheckCount(1);
+        buttonGroup.setMaxCheckCount(1);
+        buttonGroup.setUncheckLast(true);
 
 //
 //        // scale
