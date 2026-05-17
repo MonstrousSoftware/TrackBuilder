@@ -18,6 +18,7 @@ import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.math.collision.Ray;
 import com.badlogic.gdx.utils.*;
 import com.monstrous.trackbuilder.terrain.SimpleTerrain;
+import com.monstrous.trackbuilder.terrain.TerrainEditor;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class TrackBuilder extends ApplicationAdapter {
@@ -50,9 +51,10 @@ public class TrackBuilder extends ApplicationAdapter {
 
     public boolean showGrid = true;
     public boolean terrainEditMode = false;
-    public float terrainEditRadius = 7f;
-    public Vector3 terrainCursor = new Vector3();
-    public float terrainDelta = 0;
+//    public float terrainEditRadius = 7f;
+//    public Vector3 terrainCursor = new Vector3();
+//    public float terrainDelta = 0;
+    public TerrainEditor terrainEditor;
 
 
     @Override
@@ -62,6 +64,8 @@ public class TrackBuilder extends ApplicationAdapter {
 
 
         terrain = new SimpleTerrain(Gdx.files.local("heightmap.bin"),  35f, 8f);
+
+        terrainEditor = new TerrainEditor(terrain);
 
         gui = new GUI(this, terrain);
 
@@ -89,7 +93,7 @@ public class TrackBuilder extends ApplicationAdapter {
         driveCam.position.set(10f, 10f, 10f);
         driveCam.lookAt(0, 0, 0);
         driveCam.near = 0.1f;
-        driveCam.far = 150f;
+        driveCam.far = 15000f;
         driveCam.update();
 
 
@@ -119,8 +123,10 @@ public class TrackBuilder extends ApplicationAdapter {
         inputController.rotateLeftKey = Input.Keys.BUTTON_A;
         inputController.rotateRightKey = Input.Keys.BUTTON_A;
         InputMultiplexer im = new InputMultiplexer();
+        im.addProcessor(terrainEditor);
         im.addProcessor(gui.stage);
         im.addProcessor(inputController);
+
         Gdx.input.setInputProcessor(im);
 
         controlPoints.initMarkers();
@@ -214,15 +220,8 @@ public class TrackBuilder extends ApplicationAdapter {
             SaveLoad.loadTrack(Gdx.files.local("saved-track.txt"), controlPoints);
             buildRoad(controlPoints);
         }
-        if(terrainEditMode) {
-            if (Gdx.input.isKeyPressed(Input.Keys.EQUALS) && terrainEditRadius < 300)    // plus
-                terrainEditRadius++;
-            if (Gdx.input.isKeyPressed(Input.Keys.MINUS) && terrainEditRadius > 1)
-                terrainEditRadius--;
-
-            processTerrainEditInputs();
-        }
-
+        if(terrainEditMode)
+            terrainEditor.update(Gdx.graphics.getDeltaTime());
 
         moveSelectedMarker();
 
@@ -273,8 +272,9 @@ public class TrackBuilder extends ApplicationAdapter {
             renderSpline(cam);
 
         if(terrainEditMode) {
-            moveTerrainCursor(cam);
-            renderTerrainCursor(cam);
+            terrainEditor.moveTerrainCursor(cam);
+            //moveTerrainCursor(cam);
+            terrainEditor.renderTerrainCursor(cam);
         }
 
 
@@ -298,7 +298,7 @@ public class TrackBuilder extends ApplicationAdapter {
 
     private void placeDriveCamera( PerspectiveCamera driveCam, float t){
         controlPoints.getPositionSpline().valueAt(driveCam.position, t);
-        driveCam.position.y += 0.6f;
+        driveCam.position.y += 1.6f;
         driveCam.up.set(Vector3.Y);
         //controlPoints.getNormalSpline().valueAt(driveCam.up, t);
         controlPoints.getPositionSpline().derivativeAt(driveCam.direction, t);
@@ -332,41 +332,6 @@ public class TrackBuilder extends ApplicationAdapter {
         shapeRenderer.end();
     }
 
-    // *****************************************************
-    // Terrain Editing
-    //
-
-    private void moveTerrainCursor(Camera cam) {
-        Ray ray = cam.getPickRay(Gdx.input.getX(), Gdx.input.getY());
-        terrain.intersect(ray, terrainCursor);
-    }
-
-    private void renderTerrainCursor(Camera cam) {
-        shapeRenderer.setProjectionMatrix(cam.combined);
-        shapeRenderer.identity();
-        shapeRenderer.translate(terrainCursor.x,terrainCursor.y,terrainCursor.z);
-        shapeRenderer.rotate(1,0,0,90);
-
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        shapeRenderer.setColor(1,0,0,1);
-        shapeRenderer.circle(0,0, terrainEditRadius, 200);
-        shapeRenderer.end();
-    }
-
-    private void processTerrainEditInputs(){
-        if(Gdx.input.isKeyPressed(Input.Keys.PAGE_UP))
-            terrainDelta = 0.1f;
-            //terrain.changeHeight(terrainCursor.x,terrainCursor.z, terrainEditRadius, 0.1f);
-        if(Gdx.input.isKeyPressed(Input.Keys.PAGE_DOWN))
-            terrainDelta = -0.1f;
-            //terrain.changeHeight(terrainCursor.x,terrainCursor.z, terrainEditRadius,-0.1f);
-
-
-
-        if(Gdx.input.isButtonPressed(Input.Buttons.LEFT)){
-            terrain.changeHeight(terrainCursor.x,terrainCursor.z, terrainEditRadius, terrainDelta);
-        }
-    }
 
 
 

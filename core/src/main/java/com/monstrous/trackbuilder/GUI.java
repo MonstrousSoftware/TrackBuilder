@@ -189,19 +189,19 @@ public class GUI {
 
 
         // edit radius
-        radiusSlider = new Slider(1f, 100f, 1f, false, skin);
+        radiusSlider = new Slider(1f, 300f, 1f, false, skin);
         radiusSlider.setAnimateDuration(0.1f);
-        radiusSlider.setValue(main.terrainEditRadius);
+        radiusSlider.setValue(main.terrainEditor.terrainEditRadius);
         radiusSlider.setSize(150, 20);
         controls.add(new Label("edit radius", skin));
         controls.add(radiusSlider);
-        radiusLabel = new Label(String.valueOf((int) main.terrainEditRadius), skin);
+        radiusLabel = new Label(String.valueOf((int) main.terrainEditor.terrainEditRadius), skin);
         controls.add(radiusLabel).row();
         radiusSlider.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
-                main.terrainEditRadius = (radiusSlider.getValue());
-                radiusLabel.setText(String.valueOf((int)  main.terrainEditRadius));
+                main.terrainEditor.terrainEditRadius = (radiusSlider.getValue());
+                radiusLabel.setText(String.valueOf((int)  main.terrainEditor.terrainEditRadius));
             }
         });
 
@@ -209,7 +209,7 @@ public class GUI {
         buttonUp.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
-                main.terrainDelta = 0.1f;
+                main.terrainEditor.terrainDelta = 0.1f;
             }
         });
         controls.add(buttonUp).width(100).row();
@@ -218,7 +218,7 @@ public class GUI {
         buttonDown.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
-                main.terrainDelta = -0.1f;
+                main.terrainEditor.terrainDelta = -0.1f;
             }
         });
         controls.add(buttonDown).width(100).row();
@@ -420,8 +420,8 @@ public class GUI {
 
 
     private void updateControls(){
-        radiusLabel.setText(String.valueOf((int)  main.terrainEditRadius));
-        radiusSlider.setValue(main.terrainEditRadius);
+        radiusLabel.setText(String.valueOf((int)  main.terrainEditor.terrainEditRadius));
+        radiusSlider.setValue(main.terrainEditor.terrainEditRadius);
     }
 
 
