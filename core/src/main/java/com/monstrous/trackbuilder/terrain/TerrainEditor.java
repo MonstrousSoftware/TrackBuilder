@@ -11,10 +11,17 @@ import com.badlogic.gdx.math.collision.Ray;
 public class TerrainEditor extends InputAdapter {
 
     private final SimpleTerrain terrain;
+    private Camera cam;
     public float terrainEditRadius = 10f;
     public Vector3 terrainCursor = new Vector3();
+    public Vector3 startPoint = new Vector3();
     private boolean leftButtonDown = false;
     private final ShapeRenderer shapeRenderer;
+    public BrushMode brushMode = BrushMode.UP_DOWN;
+
+    public enum BrushMode {
+        UP_DOWN, ERASE, FLATTEN, SMOOTH
+    }
 
     public TerrainEditor(SimpleTerrain terrain) {
         this.terrain = terrain;
@@ -22,11 +29,13 @@ public class TerrainEditor extends InputAdapter {
     }
 
     public void moveTerrainCursor(Camera cam) {
+        this.cam = cam;
         Ray ray = cam.getPickRay(Gdx.input.getX(), Gdx.input.getY());
         terrain.intersect(ray, terrainCursor);
     }
 
     public void renderTerrainCursor(Camera cam) {
+        this.cam = cam;
         shapeRenderer.setProjectionMatrix(cam.combined);
         shapeRenderer.identity();
         shapeRenderer.translate(terrainCursor.x,terrainCursor.y,terrainCursor.z);
@@ -54,15 +63,27 @@ public class TerrainEditor extends InputAdapter {
         terrainEditRadius = Math.min(300f, Math.max(1, terrainEditRadius));
 
         // LMB increases height, shift+LMB decreases height
-        if(leftButtonDown)
-            terrain.changeHeight(terrainCursor.x,terrainCursor.z, terrainEditRadius, (shiftPressed ? - 10f : 10f) * deltaTime);
+        if(leftButtonDown){
+            switch(brushMode) {
+                case UP_DOWN:   terrain.changeHeight(terrainCursor.x, terrainCursor.z, terrainEditRadius, (shiftPressed ? -10f : 10f) * deltaTime); break;
+                case ERASE:     terrain.setHeight(terrainCursor.x, terrainCursor.z, terrainEditRadius, terrain.getAltitude()); break;
+                case FLATTEN:   terrain.setHeight(terrainCursor.x, terrainCursor.z, terrainEditRadius, startPoint.y); break;
+                default:break;
+            }
+        }
 
     }
 
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        if(button == Input.Buttons.LEFT)
+        if(button == Input.Buttons.LEFT) {
+
+            if(!leftButtonDown) {
+                Ray ray = cam.getPickRay(screenX, screenY);
+                terrain.intersect(ray, startPoint);
+            }
             leftButtonDown = true;
+        }
         return false;
     }
 

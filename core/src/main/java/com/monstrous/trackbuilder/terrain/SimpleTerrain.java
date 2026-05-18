@@ -77,11 +77,6 @@ public class SimpleTerrain implements Disposable {
         float v = (z / worldSize) + 0.5f;
         if(u < 0 || u > 1f || v < 0 || v > 1f)
             return;
-//        float h = getHeight(x,z)/amplitude;
-//        h += delta;
-//        h = Math.max(0f, Math.min(1, h));
-        //heightMap.set(u, v, h);
-
         heightMap.changeHeight(u,v, radius/worldSize, delta);
 
         // rebuild mesh
@@ -94,7 +89,27 @@ public class SimpleTerrain implements Disposable {
             generateBlock(heightMap);
         }
         buildTerrain();
+    }
 
+    public void setHeight(float x, float z, float radius, float height){
+        float worldSize = heightMap.getSize() * tileSize;
+        // scale [-0.5*worldSize .. 0.5*worldSize] to [0 .. 1]
+        float u = (x / worldSize) + 0.5f;
+        float v = (z / worldSize) + 0.5f;
+        if(u < 0 || u > 1f || v < 0 || v > 1f)
+            return;
+        heightMap.setHeight(u,v, radius/worldSize, (height-altitude)/amplitude);
+
+        // rebuild mesh
+        boolean w = wireFrameMode;
+        wireFrameMode = false;
+        generateBlock(heightMap);   // generate in triangle mode for the sake of col det triangles
+        getCollisionDetectionTriangles();
+        if(w) {
+            wireFrameMode = w;
+            generateBlock(heightMap);
+        }
+        buildTerrain();
     }
 
     /** set terrain amplitude, i.e. height multiplication factor */

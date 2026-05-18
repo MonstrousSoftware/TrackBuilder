@@ -3,6 +3,7 @@ package com.monstrous.trackbuilder.gui;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.utils.Align;
 import com.monstrous.trackbuilder.terrain.SimpleTerrain;
 import com.monstrous.trackbuilder.terrain.TerrainEditor;
 
@@ -28,15 +29,15 @@ public class TerrainWindow extends Window {
         Table controls = new Table();
         controls.left();
 
-        final CheckBox terrainCheckbox = new CheckBox("show terrain", skin);
-        terrainCheckbox.setChecked(showTerrain);
-        terrainCheckbox.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
-                showTerrain = terrainCheckbox.isChecked();
-            }
-        });
-        controls.add(terrainCheckbox).left().row();
+//        final CheckBox terrainCheckbox = new CheckBox("show terrain", skin);
+//        terrainCheckbox.setChecked(showTerrain);
+//        terrainCheckbox.addListener(new ChangeListener() {
+//            @Override
+//            public void changed(ChangeEvent event, Actor actor) {
+//                showTerrain = terrainCheckbox.isChecked();
+//            }
+//        });
+//        controls.add(terrainCheckbox).left().row();
 
 
 
@@ -60,7 +61,8 @@ public class TerrainWindow extends Window {
         ampSlider.setAnimateDuration(0.1f);
         ampSlider.setValue(amplitude);
         ampSlider.setSize(150, 20);
-        controls.add(new Label("terrain amplitude", skin));
+        Label label = new Label("terrain amplitude", skin);
+        controls.add(label).left();
         controls.add(ampSlider);
 
         ampLabel = new Label(String.valueOf(amplitude), skin);
@@ -82,7 +84,7 @@ public class TerrainWindow extends Window {
         altSlider.setAnimateDuration(0.1f);
         altSlider.setValue(terrain.getAltitude());
         altSlider.setSize(150, 20);
-        controls.add(new Label("terrain altitude", skin));
+        controls.add(new Label("terrain altitude", skin)).left();
         controls.add(altSlider);
 
         Label altLabel = new Label(String.valueOf((int) terrain.getAltitude()), skin);
@@ -101,7 +103,7 @@ public class TerrainWindow extends Window {
         radiusSlider.setAnimateDuration(0.1f);
         radiusSlider.setValue(terrainEditor.terrainEditRadius);
         radiusSlider.setSize(150, 20);
-        controls.add(new Label("edit radius", skin));
+        controls.add(new Label("edit radius", skin)).left();
         controls.add(radiusSlider);
         radiusLabel = new Label(String.valueOf((int) terrainEditor.terrainEditRadius), skin);
         controls.add(radiusLabel).row();
@@ -112,6 +114,55 @@ public class TerrainWindow extends Window {
                 radiusLabel.setText(String.valueOf((int)  terrainEditor.terrainEditRadius));
             }
         });
+
+
+        Table brushMode = new Table();
+        //brushMode.left();
+        //brushMode.debug();
+        brushMode.add(new Label("Brush mode:", skin)).row();
+        CheckBox upDownButton = new CheckBox("up/down", skin );
+        upDownButton.setChecked(true);
+        brushMode.add(upDownButton.left()).width(100);
+        CheckBox eraseButton = new CheckBox("erase", skin);
+        brushMode.add(eraseButton.left()).width(100);
+        CheckBox flattenButton = new CheckBox("flatten", skin);
+        brushMode.add(flattenButton.left()).width(100);
+        CheckBox smoothButton = new CheckBox("smooth", skin);
+        brushMode.add(smoothButton.left()).width(100);
+
+        upDownButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                terrainEditor.brushMode = TerrainEditor.BrushMode.UP_DOWN;
+            }
+        });
+        eraseButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                terrainEditor.brushMode = TerrainEditor.BrushMode.ERASE;
+            }
+        });
+        flattenButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                terrainEditor.brushMode = TerrainEditor.BrushMode.FLATTEN;
+            }
+        });
+        smoothButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                terrainEditor.brushMode = TerrainEditor.BrushMode.SMOOTH;
+            }
+        });
+
+
+        // act as radio buttons
+        ButtonGroup<CheckBox> buttonGroup = new ButtonGroup<>(upDownButton, eraseButton, flattenButton, smoothButton);
+        buttonGroup.setMinCheckCount(1);
+        buttonGroup.setMaxCheckCount(1);
+        buttonGroup.setUncheckLast(true);
+        controls.add(brushMode).colspan(3);
+        controls.row();
 
         add(controls);
         pack();

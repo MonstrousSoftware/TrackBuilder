@@ -19,28 +19,6 @@ public class GUI {
 
     public boolean showHeightmap = false;
 
-
-    public boolean showTerrain = true;
-    public boolean showWireFrame = false;
-    public boolean culling = true;
-
-
-//    public int gridsize = 16;
-//    private Label fpsLabel;
-//    private Label instancesLabel;
-//    private Label ampLabel;
-//    private float amplitude;
-//    private Label scaleLabel;
-//    private float scale;
-//    private int clipMapSizePower;
-//    private int clipMapSize;
-//    private Label clipMapSizeLabel;
-//    private int numLevels;
-//    private float clipMapScale;
-//    private Label levelsLabel;
-//    private Label clipMapScaleLabel;
-//    private Slider radiusSlider;
-//    private Label radiusLabel;
     private TerrainWindow terrainWindow;
 
 
@@ -53,10 +31,6 @@ public class GUI {
         skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
         stage = new Stage(new ScreenViewport());
 
-//        clipMapSizePower = 8;
-//        clipMapSize = 255;
-//        numLevels = 7;
-//        clipMapScale = 32f;
 
         addActors();
     }
@@ -66,15 +40,6 @@ public class GUI {
         Table controls = new Table();
         controls.left();
 
-//        controls.add(new Label("FPS: ", skin)).left();
-//
-//        fpsLabel = new Label("0", skin);
-//        controls.add(fpsLabel).left().row();
-
-//        controls.add(new Label("ModelInstances: ", skin)).left();
-//
-//        instancesLabel = new Label("0", skin);
-//        controls.add(instancesLabel).left().row();
 
         // show heightmap
         //
@@ -87,86 +52,6 @@ public class GUI {
              }
         });
         controls.add(checkbox).left().row();
-
-//        final CheckBox terrainCheckbox = new CheckBox("show terrain", skin);
-//        terrainCheckbox.setChecked(showTerrain);
-//        terrainCheckbox.addListener(new ChangeListener() {
-//            @Override
-//            public void changed(ChangeEvent event, Actor actor) {
-//                showTerrain = terrainCheckbox.isChecked();
-//            }
-//        });
-//        controls.add(terrainCheckbox).left().row();
-
-
-
-
-//        final CheckBox linesCheckbox = new CheckBox("terrain wire frame", skin);
-//        linesCheckbox.setChecked(showWireFrame);
-//        linesCheckbox.addListener(new ChangeListener() {
-//            @Override
-//            public void changed(ChangeEvent event, Actor actor) {
-//                showWireFrame = linesCheckbox.isChecked();
-//                terrain.setWireFrameMode(showWireFrame);
-//                terrain.generateBlock(terrain.heightMap);
-//            }
-//        });
-//        controls.add(linesCheckbox).left().row();
-
-//        final CheckBox cullingCheckbox = new CheckBox("frustum culling", skin);
-//        cullingCheckbox.setChecked(culling);
-//        cullingCheckbox.addListener(new ChangeListener() {
-//            @Override
-//            public void changed(ChangeEvent event, Actor actor) {
-//                culling = cullingCheckbox.isChecked();
-//                terrain.setCulling(culling);
-//            }
-//        });
-//        controls.add(cullingCheckbox).left().row();
-
-
-
-
-//        // amplitude
-//        amplitude = terrain.getAmplitude();
-//        final Slider ampSlider = new Slider(0f, 100f, 1f, false, skin);
-//        ampSlider.setAnimateDuration(0.1f);
-//        ampSlider.setValue(amplitude);
-//        ampSlider.setSize(150, 20);
-//        controls.add(new Label("terrain amplitude", skin));
-//        controls.add(ampSlider);
-//
-//        ampLabel = new Label(String.valueOf(amplitude), skin);
-//        controls.add(ampLabel).row();
-//        ampSlider.addListener(new ChangeListener() {
-//            @Override
-//            public void changed(ChangeEvent event, Actor actor) {
-//                amplitude = ampSlider.getValue();
-//                ampLabel.setText(String.valueOf((int)amplitude));
-//                terrain.setAmplitude(amplitude);
-//                //main.generateVegetation(terrain);
-//
-//            }
-//        });
-//
-//
-//        // altitude
-//        final Slider altSlider = new Slider(-100f, 100f, 1f, false, skin);
-//        altSlider.setAnimateDuration(0.1f);
-//        altSlider.setValue(terrain.getAltitude());
-//        altSlider.setSize(150, 20);
-//        controls.add(new Label("terrain altitude", skin));
-//        controls.add(altSlider);
-//
-//        Label altLabel = new Label(String.valueOf((int) terrain.getAltitude()), skin);
-//        controls.add(altLabel).row();
-//        altSlider.addListener(new ChangeListener() {
-//            @Override
-//            public void changed(ChangeEvent event, Actor actor) {
-//                terrain.setAltitude(altSlider.getValue());
-//                altLabel.setText(String.valueOf((int) terrain.getAltitude()));
-//            }
-//        });
 
         final CheckBox gridCheckbox = new CheckBox("show grid", skin);
         gridCheckbox.setChecked(main.showGrid);

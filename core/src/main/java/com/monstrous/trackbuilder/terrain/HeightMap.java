@@ -98,6 +98,34 @@ public class HeightMap implements Disposable {
         }
     }
 
+    public void setHeight(float u, float v, float radius, float height){
+        int cx = Math.round(u * mapSize);
+        int cz = Math.round(v * mapSize);
+        cx = Math.min(cx, mapSize-1); // clamp to prevent overflow
+        cz = Math.min(cz, mapSize-1);
+        int r = (int)(radius * mapSize);
+        if(r == 0) // prevent divide by zero
+            return;
+
+        int minx = Math.max(0, cx - r);
+        int maxx = Math.min(cx + r, mapSize-1);
+        int minz = Math.max(0, cz - r);
+        int maxz = Math.min(cz + r, mapSize-1);
+
+        for(int x = minx; x <= maxx; x++){
+            for(int z = minz; z <= maxz; z++){
+                float dist = (float)Math.sqrt((x-cx)*(x-cx)+(z-cz)*(z-cz));
+                if(dist<=r) {
+                    dist /= (float)r;
+                    int index = z * mapSize + x;
+                    float h = heightFloats[index];
+                    float delta = height - h;
+                    heightFloats[index] = height; //+= bump(dist)*delta;
+                }
+            }
+        }
+    }
+
     /** bump function, smoothly going from height 1 at distance 0 to height 0 at distance 1 */
     private float bump(float distance){
         if(distance >= 1f)
