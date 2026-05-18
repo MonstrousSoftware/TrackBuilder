@@ -68,6 +68,7 @@ public class TerrainEditor extends InputAdapter {
                 case UP_DOWN:   terrain.changeHeight(terrainCursor.x, terrainCursor.z, terrainEditRadius, (shiftPressed ? -10f : 10f) * deltaTime); break;
                 case ERASE:     terrain.setHeight(terrainCursor.x, terrainCursor.z, terrainEditRadius, terrain.getAltitude()); break;
                 case FLATTEN:   terrain.setHeight(terrainCursor.x, terrainCursor.z, terrainEditRadius, startPoint.y); break;
+                case SMOOTH:    terrain.smoothHeight(terrainCursor.x, terrainCursor.z, terrainEditRadius); break;
                 default:break;
             }
         }

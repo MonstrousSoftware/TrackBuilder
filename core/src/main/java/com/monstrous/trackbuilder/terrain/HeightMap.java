@@ -126,6 +126,42 @@ public class HeightMap implements Disposable {
         }
     }
 
+    public void smoothHeight(float u, float v, float radius){
+        int cx = Math.round(u * mapSize);
+        int cz = Math.round(v * mapSize);
+        cx = Math.min(cx, mapSize-1); // clamp to prevent overflow
+        cz = Math.min(cz, mapSize-1);
+        int r = (int)(radius * mapSize);
+        if(r == 0) // prevent divide by zero
+            return;
+
+        int minx = Math.max(0, cx - r);
+        int maxx = Math.min(cx + r, mapSize-1);
+        int minz = Math.max(0, cz - r);
+        int maxz = Math.min(cz + r, mapSize-1);
+
+        // set height to average of 3x3 kernel
+        for(int x = minx; x <= maxx; x++){
+            for(int z = minz; z <= maxz; z++){
+                float dist = (float)Math.sqrt((x-cx)*(x-cx)+(z-cz)*(z-cz));
+                if(dist<=r) {
+                    int count = 0;
+                    float h = 0;
+                    for(int dx = -1; dx <= 1; dx++){
+                        for(int dz = -1; dz <= 1; dz++){
+                            if(z + dz >= minz && z + dz <= maxz && x + dx >= minx && x + dx <= maxx){
+                                h += heightFloats[(z+dz) * mapSize + (x+dx)];
+                                count++;
+                            }
+                        }
+                    }
+                    h /= count;
+                    heightFloats[z * mapSize + x] = h;
+                }
+            }
+        }
+    }
+
     /** bump function, smoothly going from height 1 at distance 0 to height 0 at distance 1 */
     private float bump(float distance){
         if(distance >= 1f)

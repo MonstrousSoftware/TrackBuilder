@@ -70,6 +70,7 @@ public class SimpleTerrain implements Disposable {
         return amplitude * heightMap.get(u, v);
     }
 
+
     public void changeHeight(float x, float z, float radius, float delta){
         float worldSize = heightMap.getSize() * tileSize;
         // scale [-0.5*worldSize .. 0.5*worldSize] to [0 .. 1]
@@ -78,6 +79,8 @@ public class SimpleTerrain implements Disposable {
         if(u < 0 || u > 1f || v < 0 || v > 1f)
             return;
         heightMap.changeHeight(u,v, radius/worldSize, delta);
+
+        // todo reduce duplication
 
         // rebuild mesh
         boolean w = wireFrameMode;
@@ -99,6 +102,27 @@ public class SimpleTerrain implements Disposable {
         if(u < 0 || u > 1f || v < 0 || v > 1f)
             return;
         heightMap.setHeight(u,v, radius/worldSize, (height-altitude)/amplitude);
+
+        // rebuild mesh
+        boolean w = wireFrameMode;
+        wireFrameMode = false;
+        generateBlock(heightMap);   // generate in triangle mode for the sake of col det triangles
+        getCollisionDetectionTriangles();
+        if(w) {
+            wireFrameMode = w;
+            generateBlock(heightMap);
+        }
+        buildTerrain();
+    }
+
+    public void smoothHeight(float x, float z, float radius){
+        float worldSize = heightMap.getSize() * tileSize;
+        // scale [-0.5*worldSize .. 0.5*worldSize] to [0 .. 1]
+        float u = (x / worldSize) + 0.5f;
+        float v = (z / worldSize) + 0.5f;
+        if(u < 0 || u > 1f || v < 0 || v > 1f)
+            return;
+        heightMap.smoothHeight(u,v, radius/worldSize);
 
         // rebuild mesh
         boolean w = wireFrameMode;
