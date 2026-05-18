@@ -17,6 +17,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.math.collision.Ray;
 import com.badlogic.gdx.utils.*;
+import com.monstrous.trackbuilder.gui.GUI;
 import com.monstrous.trackbuilder.terrain.SimpleTerrain;
 import com.monstrous.trackbuilder.terrain.TerrainEditor;
 
@@ -211,7 +212,7 @@ public class TrackBuilder extends ApplicationAdapter {
         }
         if(Gdx.input.isKeyJustPressed(Input.Keys.T)) {
             terrainEditMode = !terrainEditMode;
-            showTrack = !terrainEditMode;
+            //showTrack = !terrainEditMode;
         }
         if(Gdx.input.isKeyJustPressed(Input.Keys.S)) {
             SaveLoad.saveTrack(Gdx.files.local("saved-track.txt"), controlPoints);
@@ -220,8 +221,10 @@ public class TrackBuilder extends ApplicationAdapter {
             SaveLoad.loadTrack(Gdx.files.local("saved-track.txt"), controlPoints);
             buildRoad(controlPoints);
         }
-        if(terrainEditMode)
+        if(terrainEditMode) {
+            showTrack = false;
             terrainEditor.update(Gdx.graphics.getDeltaTime());
+        }
 
         moveSelectedMarker();
 

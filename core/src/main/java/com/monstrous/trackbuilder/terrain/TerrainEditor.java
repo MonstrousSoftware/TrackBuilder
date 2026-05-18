@@ -11,10 +11,8 @@ import com.badlogic.gdx.math.collision.Ray;
 public class TerrainEditor extends InputAdapter {
 
     private final SimpleTerrain terrain;
-    //public boolean terrainEditMode = false;
-    public float terrainEditRadius = 7f;
+    public float terrainEditRadius = 10f;
     public Vector3 terrainCursor = new Vector3();
-    public float terrainDelta = 0.1f;
     private boolean leftButtonDown = false;
     private final ShapeRenderer shapeRenderer;
 
@@ -40,11 +38,24 @@ public class TerrainEditor extends InputAdapter {
         shapeRenderer.end();
     }
 
+
+
+    private boolean growPressed = false;
+    private boolean shrinkPressed = false;
+    private boolean shiftPressed = false;
+
     public void update(float deltaTime){
-        terrainEditRadius += terrainRadiusDelta;
+        // pressing shift together with [ or ] changes the radius more slowly
+        if(growPressed)
+            terrainEditRadius += deltaTime * (shiftPressed ? 20f : 100f);
+        if(shrinkPressed)
+            terrainEditRadius -= deltaTime * (shiftPressed ? 20f : 100f);
+
         terrainEditRadius = Math.min(300f, Math.max(1, terrainEditRadius));
+
+        // LMB increases height, shift+LMB decreases height
         if(leftButtonDown)
-            terrain.changeHeight(terrainCursor.x,terrainCursor.z, terrainEditRadius, terrainDelta);
+            terrain.changeHeight(terrainCursor.x,terrainCursor.z, terrainEditRadius, (shiftPressed ? - 10f : 10f) * deltaTime);
 
     }
 
@@ -62,21 +73,20 @@ public class TerrainEditor extends InputAdapter {
         return false;
     }
 
-
-
-    private float terrainRadiusDelta = 0;
+;
 
     @Override
     public boolean keyDown(int keycode) {
         switch(keycode){
-            case Input.Keys.PAGE_UP:terrainDelta = 0.1f; break;
-            case Input.Keys.PAGE_DOWN:terrainDelta = -0.1f; break;
-
-            case Input.Keys.EQUALS:
-                terrainRadiusDelta = 1;
+            case Input.Keys.LEFT_BRACKET:
+                shrinkPressed = true;
                 break;
-            case Input.Keys.MINUS:
-                terrainRadiusDelta = -1;
+            case Input.Keys.RIGHT_BRACKET:
+                growPressed = true;
+                break;
+            case Input.Keys.SHIFT_LEFT:
+            case Input.Keys.SHIFT_RIGHT:
+                shiftPressed = true;
                 break;
             default: return false;
         }
@@ -86,10 +96,15 @@ public class TerrainEditor extends InputAdapter {
     @Override
     public boolean keyUp(int keycode) {
         switch(keycode){
-            case Input.Keys.EQUALS:
-            case Input.Keys.MINUS:
-                terrainRadiusDelta = 0;
+            case Input.Keys.LEFT_BRACKET:
+                shrinkPressed = false;
                 break;
+            case Input.Keys.RIGHT_BRACKET:
+                growPressed = false;
+                break;
+            case Input.Keys.SHIFT_LEFT:
+            case Input.Keys.SHIFT_RIGHT:
+                shiftPressed = false;
             default: return false;
         }
         return true;
