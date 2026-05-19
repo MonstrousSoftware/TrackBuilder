@@ -19,15 +19,31 @@ SHIFT + Arrow keys to rotate the selected (yellow) marker.
 W to toggle wire frame mode
 S to save track
 L to load track
-T for terrain editor
+T to toggle terrain edit mode
 
 Terrain edit mode:
 
+- scroll wheel to change size of terrain brush
 - \[ to increase size of terrain brush
-- \] to descrease size of terrain brush
+- \] to decrease size of terrain brush
 - shift + \[ or \]  for fine control of brush size
+- brush behaviour depends on brush mode: up/down, erase, flatten, smooth
+
+up/down mode:
 - left mouse button to raise terrain
 - shift + left mouse button to lower terrain
+
+erase mode:
+- terrain is changed to height zero
+
+flatten mode:
+- terrain is changed to height of selected spot
+
+smooth mode:
+- terrain height is averaged in the brush area
+
+When in terrain edit mode:
+- hold ALT key to rotate view with the mouse or zoom the view with the scroll wheel
 
 
 ## Platforms

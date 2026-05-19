@@ -192,6 +192,8 @@ public class GUI {
         stage.addActor(controls);
 
         terrainWindow = new TerrainWindow(main.terrain, main.terrainEditor, skin);
+        terrainWindow.setY(stage.getHeight() - terrainWindow.getHeight());
+        terrainWindow.setX(stage.getWidth() - terrainWindow.getWidth());
         stage.addActor(terrainWindow);
 
 

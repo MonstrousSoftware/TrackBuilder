@@ -52,6 +52,7 @@ public class TerrainEditor extends InputAdapter {
     private boolean growPressed = false;
     private boolean shrinkPressed = false;
     private boolean shiftPressed = false;
+    private boolean controlPressed = false;
 
     public void update(float deltaTime){
         // pressing shift together with [ or ] changes the radius more slowly
@@ -77,25 +78,34 @@ public class TerrainEditor extends InputAdapter {
 
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        if(button == Input.Buttons.LEFT) {
+        // if you press shift then mouse events are passed to the camera controller
+        if(button == Input.Buttons.LEFT && !controlPressed) {
 
             if(!leftButtonDown) {
                 Ray ray = cam.getPickRay(screenX, screenY);
                 terrain.intersect(ray, startPoint);
             }
             leftButtonDown = true;
+            return true;    // event was processed
         }
         return false;
     }
 
     @Override
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-        if(button == Input.Buttons.LEFT)
+        if(button == Input.Buttons.LEFT && !controlPressed) {
             leftButtonDown = false;
+            return true; // event was processed
+        }
         return false;
     }
 
-;
+    @Override
+    public boolean touchDragged (int screenX, int screenY, int pointer) {
+        return !controlPressed;
+    }
+
+
 
     @Override
     public boolean keyDown(int keycode) {
@@ -109,6 +119,10 @@ public class TerrainEditor extends InputAdapter {
             case Input.Keys.SHIFT_LEFT:
             case Input.Keys.SHIFT_RIGHT:
                 shiftPressed = true;
+                break;
+            case Input.Keys.ALT_LEFT:
+            case Input.Keys.ALT_RIGHT:
+                controlPressed = true;
                 break;
             default: return false;
         }
@@ -127,13 +141,21 @@ public class TerrainEditor extends InputAdapter {
             case Input.Keys.SHIFT_LEFT:
             case Input.Keys.SHIFT_RIGHT:
                 shiftPressed = false;
+            case Input.Keys.ALT_LEFT:
+            case Input.Keys.ALT_RIGHT:
+                controlPressed = false;
+                break;
             default: return false;
         }
         return true;
     }
 
-    //    @Override
-//    public boolean scrolled(float amountX, float amountY) {
-//        return super.scrolled(amountX, amountY);
-//    }
+    @Override
+    public boolean scrolled(float amountX, float amountY) {
+        if(!controlPressed){
+            terrainEditRadius += 5f*amountY;
+            return true;    // event was processed
+        }
+        return false;
+    }
 }

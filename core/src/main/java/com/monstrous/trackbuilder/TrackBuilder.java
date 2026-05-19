@@ -124,8 +124,9 @@ public class TrackBuilder extends ApplicationAdapter {
         inputController.rotateLeftKey = Input.Keys.BUTTON_A;
         inputController.rotateRightKey = Input.Keys.BUTTON_A;
         InputMultiplexer im = new InputMultiplexer();
-        im.addProcessor(terrainEditor);
+
         im.addProcessor(gui.stage);
+        im.addProcessor(terrainEditor);
         im.addProcessor(inputController);
 
         Gdx.input.setInputProcessor(im);

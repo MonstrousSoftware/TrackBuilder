@@ -127,6 +127,7 @@ public class HeightMap implements Disposable {
     }
 
     public void smoothHeight(float u, float v, float radius){
+        float strength= 0.1f;
         int cx = Math.round(u * mapSize);
         int cz = Math.round(v * mapSize);
         cx = Math.min(cx, mapSize-1); // clamp to prevent overflow
@@ -156,7 +157,8 @@ public class HeightMap implements Disposable {
                         }
                     }
                     h /= count;
-                    heightFloats[z * mapSize + x] = h;
+                    float ho = heightFloats[z * mapSize + x];
+                    heightFloats[z * mapSize + x] = ho + strength * (h-ho);
                 }
             }
         }
