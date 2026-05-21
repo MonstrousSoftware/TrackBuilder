@@ -16,19 +16,34 @@ import java.util.Arrays;
 
 public class HeightMap implements Disposable {
 
-    public final int mapSize = 128;
-    private final FileHandle fileHandle;
+    public final int mapSize;
+    private FileHandle fileHandle;
     private final float[] heightFloats;
 
 
-    /** Create height map from grey scale texture file (should be 8 bits greyscale) */
+    /** Create height map from height map file (array of floats, assumed to be a square height map) */
     public HeightMap(FileHandle fileHandle) {
         this.fileHandle = fileHandle;
 
+        long fileSize = fileHandle.length();
+        long numFloats = fileSize / Float.BYTES;
+        mapSize = (int)Math.sqrt((double)numFloats);
 
-        // convert bytes values (0 to 255) to floats (0.0f to 1.0f)
+
         heightFloats = new float[mapSize * mapSize];
         load(fileHandle);
+    }
+
+    /** Create empty height map of given size. (= number of vertices on each edge)
+     * Size cannot exceed 128x128 because mesh indices are represented with shorts.
+     * Will be saved as "temp.bin".
+     * */
+    public HeightMap(int mapSize) {
+        if(mapSize < 2 || mapSize > 128)
+            Gdx.app.error("HeightMap constructor", "size must be >= 2 and <= 128");
+        this.fileHandle = Gdx.files.local("temp.bin");
+        this.mapSize = mapSize;
+        heightFloats = new float[mapSize * mapSize];
     }
 
 
@@ -173,7 +188,8 @@ public class HeightMap implements Disposable {
 
     @Override
     public void dispose() {
-        save(fileHandle);
+        if(fileHandle != null)
+            save(fileHandle);
     }
 
 }

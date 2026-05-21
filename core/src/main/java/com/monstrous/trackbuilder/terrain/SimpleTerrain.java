@@ -37,7 +37,7 @@ public class SimpleTerrain implements Disposable {
     private float altitude = -30f;   // world height of terrain base
 
     /** Construct terrain.
-     * @param fileHandle file handle for a (square) noise texture file
+     * @param fileHandle file handle for a height map file
      * @param amplitude multiplier for height
      * @param tileSize size of a single tile in world units
      */

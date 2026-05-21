@@ -11,9 +11,9 @@ import com.badlogic.gdx.math.collision.Ray;
 public class TerrainEditor extends InputAdapter {
 
     private final SimpleTerrain terrain;
-    private Camera cam;
+    private final Camera cam;
     public float terrainEditRadius = 10f;
-    public Vector3 terrainCursor = new Vector3();
+    public Vector3 brushPosition = new Vector3();
     public Vector3 startPoint = new Vector3();
     private boolean leftButtonDown = false;
     private final ShapeRenderer shapeRenderer;
@@ -23,22 +23,22 @@ public class TerrainEditor extends InputAdapter {
         UP_DOWN, ERASE, FLATTEN, SMOOTH
     }
 
-    public TerrainEditor(SimpleTerrain terrain) {
+    public TerrainEditor(SimpleTerrain terrain, Camera camera) {
         this.terrain = terrain;
+        this.cam = camera;
         shapeRenderer = new ShapeRenderer();
     }
 
-    public void moveTerrainCursor(Camera cam) {
-        this.cam = cam;
+    public void moveBrushToMousePosition() {
         Ray ray = cam.getPickRay(Gdx.input.getX(), Gdx.input.getY());
-        terrain.intersect(ray, terrainCursor);
+        terrain.intersect(ray, brushPosition);
     }
 
-    public void renderTerrainCursor(Camera cam) {
-        this.cam = cam;
+    /** render brush outline as a horizontal circle */
+    public void renderBrushOutline() {
         shapeRenderer.setProjectionMatrix(cam.combined);
         shapeRenderer.identity();
-        shapeRenderer.translate(terrainCursor.x,terrainCursor.y,terrainCursor.z);
+        shapeRenderer.translate(brushPosition.x, brushPosition.y, brushPosition.z);
         shapeRenderer.rotate(1,0,0,90);
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
@@ -66,10 +66,10 @@ public class TerrainEditor extends InputAdapter {
         // LMB increases height, shift+LMB decreases height
         if(leftButtonDown){
             switch(brushMode) {
-                case UP_DOWN:   terrain.changeHeight(terrainCursor.x, terrainCursor.z, terrainEditRadius, (shiftPressed ? -10f : 10f) * deltaTime); break;
-                case ERASE:     terrain.setHeight(terrainCursor.x, terrainCursor.z, terrainEditRadius, terrain.getAltitude()); break;
-                case FLATTEN:   terrain.setHeight(terrainCursor.x, terrainCursor.z, terrainEditRadius, startPoint.y); break;
-                case SMOOTH:    terrain.smoothHeight(terrainCursor.x, terrainCursor.z, terrainEditRadius); break;
+                case UP_DOWN:   terrain.changeHeight(brushPosition.x, brushPosition.z, terrainEditRadius, (shiftPressed ? -10f : 10f) * deltaTime); break;
+                case ERASE:     terrain.setHeight(brushPosition.x, brushPosition.z, terrainEditRadius, terrain.getAltitude()); break;
+                case FLATTEN:   terrain.setHeight(brushPosition.x, brushPosition.z, terrainEditRadius, startPoint.y); break;
+                case SMOOTH:    terrain.smoothHeight(brushPosition.x, brushPosition.z, terrainEditRadius); break;
                 default:break;
             }
         }

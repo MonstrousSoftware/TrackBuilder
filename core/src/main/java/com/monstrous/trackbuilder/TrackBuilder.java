@@ -66,9 +66,9 @@ public class TrackBuilder extends ApplicationAdapter {
 
         terrain = new SimpleTerrain(Gdx.files.local("heightmap.bin"),  35f, 8f);
 
-        terrainEditor = new TerrainEditor(terrain);
 
-        gui = new GUI(this, terrain);
+
+
 
         batch = new SpriteBatch();
         image = new Texture("libgdx.png");
@@ -114,6 +114,8 @@ public class TrackBuilder extends ApplicationAdapter {
         debugInstances.add( xyzInstance );
         disposables.add(xyzModel);
 
+        terrainEditor = new TerrainEditor(terrain, editCam);
+        gui = new GUI(this, terrain);
 
         inputController = new CameraInputController(editCam);
 
@@ -137,6 +139,8 @@ public class TrackBuilder extends ApplicationAdapter {
         shapeRenderer = new ShapeRenderer();
 
         placeDriveCamera(driveCam, 0);
+
+
     }
 
     /** move selected marker (if any) if an arrow key is pressed */
@@ -276,9 +280,8 @@ public class TrackBuilder extends ApplicationAdapter {
             renderSpline(cam);
 
         if(terrainEditMode) {
-            terrainEditor.moveTerrainCursor(cam);
-            //moveTerrainCursor(cam);
-            terrainEditor.renderTerrainCursor(cam);
+            terrainEditor.moveBrushToMousePosition();
+            terrainEditor.renderBrushOutline();
         }
 
 
